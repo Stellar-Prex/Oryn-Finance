@@ -55,6 +55,11 @@ export const ENDPOINTS = {
   // Leaderboard
   LEADERBOARD: '/leaderboard',
   REPUTATION_LEADERBOARD: '/leaderboard/reputation',
+  LEADERBOARD_ADVANCED: '/leaderboard/advanced-metrics',
+
+  // Push Notifications
+  PUSH_VAPID_KEY: '/push/vapid-public-key',
+  PUSH_SUBSCRIBE: '/push/subscribe',
   
   // Analytics
   ANALYTICS: '/analytics',
