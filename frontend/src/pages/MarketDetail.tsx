@@ -16,6 +16,7 @@ import { ResolutionPanel } from '@/components/ResolutionPanel';
 import { OddsChart } from '@/components/OddsChart';
 import { useMarketUpdates } from '@/contexts/WebSocketContext';
 import { useOffline } from '@/hooks/useOffline';
+import { useI18n } from '@/i18n';
 
 function formatVolume(volume: number): string {
   if (volume >= 1000000) return `$${(volume / 1000000).toFixed(2)}M`;
@@ -24,6 +25,7 @@ function formatVolume(volume: number): string {
 }
 
 export default function MarketDetail() {
+  const { t } = useI18n();
   const { id } = useParams();
   const { isConnected, connect, publicKey, signTransaction } = useWallet();
   const { marketData } = useMarketUpdates(id || '');
@@ -272,7 +274,7 @@ export default function MarketDetail() {
         {/* Back Button */}
         <Link to="/markets" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" />
-          Back to Markets
+          {t('market.back')}
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -287,7 +289,7 @@ export default function MarketDetail() {
                 {currentMarket.status === 'Trending' && (
                   <Badge className="bg-gradient-to-r from-primary to-secondary">
                     <TrendingUp className="w-3 h-3 mr-1" />
-                    Trending
+                    {t('market.trending')}
                   </Badge>
                 )}
               </div>
@@ -297,7 +299,7 @@ export default function MarketDetail() {
                 {isImbalanced && (
                   <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 flex items-center gap-1.5 animate-pulse">
                     <AlertTriangle className="w-3 h-3" />
-                    Liquidity Imbalance: {imbalancedSide} heavy
+                    {t('market.liquidityImbalance', { side: imbalancedSide })}
                   </Badge>
                 )}
               </div>
@@ -308,11 +310,11 @@ export default function MarketDetail() {
               {/* Current Prices — Live */}
               <div className="grid grid-cols-2 gap-4 mt-6">
                 <div className="p-4 rounded-xl bg-success/10 border border-success/20">
-                  <div className="text-sm text-muted-foreground mb-1">YES Price</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('market.yesPrice')}</div>
                   <div className="text-3xl font-bold text-success">{Math.round(liveYesPrice * 100)}¢</div>
                 </div>
                 <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20">
-                  <div className="text-sm text-muted-foreground mb-1">NO Price</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('market.noPrice')}</div>
                   <div className="text-3xl font-bold text-destructive">{Math.round(liveNoPrice * 100)}¢</div>
                 </div>
               </div>
@@ -320,7 +322,7 @@ export default function MarketDetail() {
 
             {/* Dynamic Odds Visualization */}
             <div className="glass-card p-6">
-              <h2 className="text-lg font-semibold mb-4">Market Performance</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('market.performance')}</h2>
               <OddsChart
                 marketId={currentMarket.id}
                 initialYesPrice={currentMarket.yesPrice}
@@ -331,7 +333,7 @@ export default function MarketDetail() {
 
             {/* Recent Trades */}
             <div className="glass-card p-6">
-              <h2 className="text-lg font-semibold mb-4">Recent Trades</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('market.recentTrades')}</h2>
               <div className="space-y-3">
                 {recentTrades.map((trade) => (
                   <div key={trade.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
@@ -361,8 +363,8 @@ export default function MarketDetail() {
             <div className="glass-card p-6 sticky top-24">
               <Tabs value={tradeType} onValueChange={(v) => setTradeType(v as 'buy' | 'sell')}>
                 <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="buy">Buy</TabsTrigger>
-                  <TabsTrigger value="sell">Sell</TabsTrigger>
+                  <TabsTrigger value="buy">{t('market.buy')}</TabsTrigger>
+                  <TabsTrigger value="sell">{t('market.sell')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="buy" className="space-y-4">
@@ -386,7 +388,7 @@ export default function MarketDetail() {
 
                   {/* Amount Input */}
                   <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Amount (USDC)</label>
+                    <label className="text-sm text-muted-foreground mb-2 block">{t('market.amount')}</label>
                     <Input
                       type="number"
                       placeholder="0.00"
@@ -399,30 +401,30 @@ export default function MarketDetail() {
                   {/* Trade Summary */}
                   <div className="p-4 rounded-lg bg-muted/50 space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">You receive</span>
+                      <span className="text-muted-foreground">{t('market.receive')}</span>
                       <span className="font-medium">{tokensReceived} {position}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Price per token</span>
+                      <span className="text-muted-foreground">{t('market.pricePerToken')}</span>
                       <span>{Math.round(price * 100)}¢</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Est. price impact</span>
+                      <span className="text-muted-foreground">{t('market.priceImpact')}</span>
                       <span className="text-warning">{priceImpact}%</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Est. fee</span>
+                      <span className="text-muted-foreground">{t('market.fee')}</span>
                       <span>{estimatedFee} USDC</span>
                     </div>
                     {partialFillResult && (
                       <>
                         <div className="border-t border-border/50 pt-2 mt-1" />
                         <div className="flex justify-between text-sm">
-                          <span className="text-success">Filled</span>
+                          <span className="text-success">{t('market.filled')}</span>
                           <span className="font-medium text-success">{partialFillResult.filledAmount.toFixed(4)} {position}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-warning">Remaining</span>
+                          <span className="text-warning">{t('market.remaining')}</span>
                           <span className="font-medium text-warning">{partialFillResult.remainingAmount.toFixed(4)} {position}</span>
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden mt-1">
@@ -444,27 +446,27 @@ export default function MarketDetail() {
                     {isLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Confirming...
+                        {t('market.confirming')}
                       </>
                     ) : isOffline ? (
                       <>
                         <WifiOff className="w-4 h-4 mr-2" />
-                        Offline — Trading Disabled
+                        {t('market.tradingDisabled')}
                       </>
                     ) : !isConnected ? (
-                      'Connect Wallet'
+                      t('market.connectWallet')
                     ) : (
                       `Buy ${position}`
                     )}
                   </Button>
 
                   <p className="text-xs text-center text-muted-foreground">
-                    Est. settlement: ~5 seconds
+                    {t('market.settlement')}
                   </p>
 
                   {txProgress.phase !== 'idle' && (
                     <div className={`p-3 rounded-lg border ${txProgress.phase === 'error' ? 'bg-red-500/10 border-red-500/20' : 'bg-primary/10 border-primary/20'}`}>
-                      <p className="text-xs font-medium mb-1">Transaction Status</p>
+                      <p className="text-xs font-medium mb-1">{t('market.txStatus')}</p>
                       <p className="text-xs text-muted-foreground">{txProgress.message}</p>
                       <div className="w-full h-1.5 rounded bg-muted/50 mt-2 overflow-hidden">
                         <div
@@ -492,7 +494,7 @@ export default function MarketDetail() {
 
                 <TabsContent value="sell" className="space-y-4">
                   <p className="text-center text-muted-foreground py-8">
-                    Connect wallet to view your positions to sell
+                    {t('market.sellPrompt')}
                   </p>
                 </TabsContent>
               </Tabs>
@@ -502,34 +504,34 @@ export default function MarketDetail() {
             <div className="glass-card p-6 space-y-4">
               <h3 className="font-semibold flex items-center gap-2">
                 <Info className="w-4 h-4" />
-                Market Info
+                {t('market.info')}
               </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <TrendingUp className="w-4 h-4" />
-                    Total Volume
+                    {t('market.volume')}
                   </span>
                   <span className="font-medium">{formatVolume(currentMarket.volume)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <Users className="w-4 h-4" />
-                    Traders
+                    {t('market.traders')}
                   </span>
                   <span className="font-medium">{currentMarket.traders}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    Created
+                    {t('market.created')}
                   </span>
                   <span className="font-medium">{new Date(currentMarket.createdAt).toLocaleDateString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <Clock className="w-4 h-4" />
-                    Expires
+                    {t('market.expires')}
                   </span>
                   <div className="text-right">
                     <div className="font-medium">{new Date(currentMarket.expirationDate).toLocaleDateString()}</div>
@@ -538,11 +540,11 @@ export default function MarketDetail() {
                 </div>
               </div>
               <div className="pt-4 border-t border-border">
-                <p className="text-xs text-muted-foreground mb-2">Resolution Source</p>
+                <p className="text-xs text-muted-foreground mb-2">{t('market.resolutionSource')}</p>
                 <p className="text-sm">{currentMarket.resolutionSource}</p>
               </div>
               <div className="pt-2">
-                <p className="text-xs text-muted-foreground mb-2">Creator</p>
+                <p className="text-xs text-muted-foreground mb-2">{t('market.creator')}</p>
                 <a href="#" className="text-sm text-primary flex items-center gap-1 hover:underline">
                   {currentMarket.creator}
                   <ExternalLink className="w-3 h-3" />

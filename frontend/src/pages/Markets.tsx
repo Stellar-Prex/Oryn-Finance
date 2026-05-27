@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { apiService } from '@/services/apiService';
 import { Market } from '@/data/mockData';
 import { useOffline } from '@/hooks/useOffline';
+import { useI18n } from '@/i18n';
 
 type SortOption = 'volume' | 'newest' | 'ending';
 
@@ -54,6 +55,7 @@ const demoMarkets: Market[] = [
 ];
 
 export default function Markets() {
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
@@ -152,7 +154,7 @@ export default function Markets() {
           <div className="mb-12">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-primary" />
-              Trending Markets
+              {t('markets.trending')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {trendingMarkets.map((market) => (
@@ -166,11 +168,11 @@ export default function Markets() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
-              Discover Markets
+              {t('markets.discover')}
               {isCached && (
                 <Badge variant="outline" className="text-xs border-warning/40 text-warning bg-warning/10 flex items-center gap-1">
                   <WifiOff className="w-3 h-3" />
-                  Cached
+                  {t('markets.cached')}
                 </Badge>
               )}
             </h1>
@@ -182,11 +184,11 @@ export default function Markets() {
               className="flex items-center gap-2 border-white/10 hover:bg-white/5 disabled:opacity-40"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              {isOffline ? 'Offline' : 'Refresh'}
+              {isOffline ? t('markets.offline') : t('markets.refresh')}
             </Button>
           </div>
           <p className="text-muted-foreground">
-            Browse and trade on {markets.length} prediction markets
+            {t('markets.subtitle', { count: markets.length })}
           </p>
         </div>
 
@@ -196,7 +198,7 @@ export default function Markets() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Search by question or #tag..."
+                placeholder={t('markets.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 input-dark border-white/10 focus:border-primary/50"
@@ -232,7 +234,7 @@ export default function Markets() {
             </div>
             <div className="flex items-center gap-2">
               <SortAsc className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Sort:</span>
+              <span className="text-sm text-muted-foreground">{t('markets.sort')}</span>
               {(['volume', 'newest', 'ending'] as SortOption[]).map((option) => (
                 <Button
                   key={option}
@@ -241,7 +243,7 @@ export default function Markets() {
                   onClick={() => setSortBy(option)}
                   className={`tab-button capitalize ${sortBy === option ? 'active' : ''}`}
                 >
-                  {option === 'ending' ? 'Ending Soon' : option}
+                  {option === 'ending' ? t('markets.endingSoon') : option}
                 </Button>
               ))}
             </div>
@@ -266,7 +268,7 @@ export default function Markets() {
         {!loading && filteredMarkets.length === 0 && (
           <div className="text-center py-20">
             <p className="text-muted-foreground text-lg">
-              {markets.length === 0 ? 'No markets available' : 'No markets found matching your criteria'}
+              {markets.length === 0 ? t('markets.noMarkets') : t('markets.noResults')}
             </p>
             {markets.length > 0 && (
               <Button 
@@ -278,7 +280,7 @@ export default function Markets() {
                   setSelectedStatus('All');
                 }}
               >
-                Clear filters
+                {t('markets.clearFilters')}
               </Button>
             )}
           </div>
