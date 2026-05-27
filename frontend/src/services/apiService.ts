@@ -404,6 +404,14 @@ export const leaderboardService = {
     return response.data!;
   },
 
+  async getAdvancedMetrics(limit = 20): Promise<any> {
+    const response = await apiClient.get(`${ENDPOINTS.LEADERBOARD_ADVANCED}?limit=${limit}`);
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to fetch advanced leaderboard metrics');
+    }
+    return response.data;
+  },
+
   async getLeaderboard(params?: { limit?: number; timeframe?: string }): Promise<any> {
     const queryParams = new URLSearchParams();
     if (params) {
