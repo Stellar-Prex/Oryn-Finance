@@ -13,6 +13,7 @@ members = [
     "reputation",
     "insurance",
     "shared",
+    "support-page",
 ]
 
 resolver = "2"
