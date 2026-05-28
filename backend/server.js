@@ -27,7 +27,7 @@ const adminRoutes = require('./src/routes/admin');
 const oracleRoutes = require('./src/routes/oracle');
 const liquidityRoutes = require('./src/routes/liquidity');
 const pushNotificationRoutes = require('./src/routes/pushNotifications');
-const messageRoutes = require('./src/routes/messages');
+
 
 // Import services
 const backgroundJobs = require('./src/services/backgroundJobs');
@@ -205,8 +205,7 @@ class OrynBackendServer {
     // Push notification routes
     this.app.use('/api/push', pushNotificationRoutes);
 
-    // Encrypted messaging routes
-    this.app.use('/api/messages', messageRoutes);
+
 
     // Protected routes
     this.app.use('/api/trades', tradeRoutes);

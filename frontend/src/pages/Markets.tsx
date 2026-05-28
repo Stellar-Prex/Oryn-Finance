@@ -15,6 +15,17 @@ type SortOption = 'volume' | 'newest' | 'ending' | 'liquidity' | 'momentum' | 'a
 
 const categories = ['All', 'Crypto', 'Sports', 'Politics', 'Entertainment', 'Technology', 'Economics', 'Other'];
 const statusFilters = ['All', 'Active', 'Resolved', 'Trending'];
+const regions = [
+  { value: 'all', label: 'All Regions' },
+  { value: 'global', label: 'Global' },
+  { value: 'north_america', label: 'North America' },
+  { value: 'south_america', label: 'South America' },
+  { value: 'europe', label: 'Europe' },
+  { value: 'asia', label: 'Asia' },
+  { value: 'africa', label: 'Africa' },
+  { value: 'oceania', label: 'Oceania' },
+  { value: 'middle_east', label: 'Middle East' },
+];
 
 // Demo markets data for fallback
 const demoMarkets: Market[] = [
@@ -59,6 +70,7 @@ export default function Markets() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
+  const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('volume');
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +87,7 @@ export default function Markets() {
         const filters: any = {};
         if (selectedCategory !== 'All') filters.category = selectedCategory.toLowerCase();
         if (selectedStatus !== 'All') filters.status = selectedStatus.toLowerCase();
+        if (selectedRegion !== 'all') filters.region = selectedRegion;
         if (searchQuery) filters.search = searchQuery;
         
         const response = await apiService.markets.getMarkets(filters);
@@ -115,7 +128,7 @@ export default function Markets() {
 
   useEffect(() => {
     fetchMarkets();
-  }, [selectedCategory, selectedStatus]);
+  }, [selectedCategory, selectedStatus, selectedRegion]);
 
   const trendingMarkets = useMemo(() => {
     return [...markets]
@@ -223,6 +236,19 @@ export default function Markets() {
                   className={`tab-button ${selectedCategory === category ? 'active' : ''}`}
                 >
                   {category}
+                </Button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {regions.map((region) => (
+                <Button
+                  key={region.value}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedRegion(region.value)}
+                  className={`tab-button ${selectedRegion === region.value ? 'active' : ''}`}
+                >
+                  {region.label}
                 </Button>
               ))}
             </div>
