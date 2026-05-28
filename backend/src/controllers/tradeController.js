@@ -15,7 +15,8 @@ class TradeController {
       tradeType,
       amount,
       maxSlippage = 0.05,
-      walletAddress
+      walletAddress,
+      nonce
     } = req.body;
 
     // Verify user owns the wallet
@@ -34,6 +35,23 @@ class TradeController {
 
     if (market.expiresAt <= new Date()) {
       throw new ValidationError('Market has expired');
+    }
+
+    const normalizedWalletAddress = req.user.walletAddress.toLowerCase();
+    const existingNonceTrade = await Trade.findOne({
+      userWalletAddress: normalizedWalletAddress,
+      nonce
+    }).select('tradeId status timestamp');
+
+    if (existingNonceTrade) {
+      logger.warn('[SECURITY] Suspicious trade replay attempt detected', {
+        marketId,
+        walletAddress: normalizedWalletAddress,
+        nonce,
+        existingTradeId: existingNonceTrade.tradeId,
+        existingTradeStatus: existingNonceTrade.status
+      });
+      throw new ValidationError('Duplicate trade submission detected');
     }
 
     const tradeId = `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
