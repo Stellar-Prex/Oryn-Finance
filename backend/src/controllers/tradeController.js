@@ -102,7 +102,8 @@ class TradeController {
       const trade = new Trade({
         tradeId,
         marketId,
-        userWalletAddress: req.user.walletAddress,
+        userWalletAddress: normalizedWalletAddress,
+        nonce,
         tradeType,
         tokenType,
         amount: effectiveAmount,
@@ -136,7 +137,7 @@ class TradeController {
       tradeBatcher.addTrade({
         tradeId,
         marketId,
-        userWalletAddress: req.user.walletAddress,
+        userWalletAddress: normalizedWalletAddress,
         tradeType,
         tokenType,
         amount: effectiveAmount,
@@ -147,7 +148,8 @@ class TradeController {
       logger.trade('Trade queued for batch execution', {
         tradeId,
         marketId,
-        user: req.user.walletAddress,
+        user: normalizedWalletAddress,
+        nonce,
         tokenType,
         tradeType,
         requestedAmount: amount,
@@ -164,6 +166,7 @@ class TradeController {
           trade: {
             tradeId,
             marketId,
+            nonce,
             tokenType,
             tradeType,
             requestedAmount: amount,
