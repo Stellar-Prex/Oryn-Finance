@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { ArrowLeft, TrendingUp, Users, Calendar, Clock, ExternalLink, Info, Loader2, AlertTriangle, WifiOff, Radio } from 'lucide-react';
+
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,8 +14,10 @@ import { TradeConfirmationModal, PartialFillBanner, PartialFillResult } from '@/
 import { CountdownTimer } from '@/components/ui/CountdownTimer';
 import { ResolutionPanel } from '@/components/ResolutionPanel';
 import { OddsChart } from '@/components/OddsChart';
+import { CreatorReputation } from '@/components/markets/CreatorReputation';
 import { useMarketUpdates } from '@/contexts/WebSocketContext';
 import { useOffline } from '@/hooks/useOffline';
+import { useI18n } from '@/i18n';
 
 function formatVolume(volume: number): string {
   if (volume >= 1000000) return `$${(volume / 1000000).toFixed(2)}M`;
@@ -24,7 +25,32 @@ function formatVolume(volume: number): string {
   return `$${volume}`;
 }
 
+const PHASE_LABELS: Record<OptimisticPhase, string> = {
+  idle: '',
+  optimistic: 'Order placed — confirming on-chain',
+  building: 'Building transaction...',
+  signing: 'Awaiting wallet signature...',
+  submitting: 'Submitting to Stellar network...',
+  confirming: 'Awaiting network confirmation...',
+  confirmed: 'Transaction confirmed',
+  failed: 'Transaction failed',
+  rolled_back: 'Order reverted — something went wrong',
+};
+
+const PHASE_PERCENT: Record<OptimisticPhase, number> = {
+  idle: 0,
+  optimistic: 15,
+  building: 30,
+  signing: 50,
+  submitting: 70,
+  confirming: 90,
+  confirmed: 100,
+  failed: 100,
+  rolled_back: 0,
+};
+
 export default function MarketDetail() {
+  const { t } = useI18n();
   const { id } = useParams();
   const { isConnected, connect, publicKey, signTransaction } = useWallet();
   const { marketData } = useMarketUpdates(id || '');
@@ -41,7 +67,20 @@ export default function MarketDetail() {
     txHash?: string;
   }>({ phase: 'idle', message: '' });
 
-  // Demo markets data
+  const {
+    phase: optimisticPhase,
+    phaseMessage,
+    txHash: optimisticTxHash,
+    activeTradeId,
+    addOptimisticTrade,
+    confirmOptimisticTrade,
+    rollbackOptimisticTrade,
+    setTransactionPhase,
+    reset: resetOptimistic,
+    isPending: isOptimisticPending,
+    isError: isOptimisticError,
+  } = useOptimisticTrade();
+
   const demoMarkets: { [key: string]: Market } = {
     '1': {
       id: '1',
@@ -93,12 +132,12 @@ export default function MarketDetail() {
     }
   };
 
-  // Get the current market
   const currentMarket = demoMarkets[id || ''] || demoMarkets['openai-gpt5-2026'];
 
-  // Live prices updated via WebSocket; fall back to market initial prices
   const [liveYesPrice, setLiveYesPrice] = useState(currentMarket.yesPrice);
   const [liveNoPrice, setLiveNoPrice] = useState(currentMarket.noPrice);
+  const [liveLiquidity, setLiveLiquidity] = useState(currentMarket.liquidity);
+  const [liveVolume, setLiveVolume] = useState(currentMarket.volume);
 
   useEffect(() => {
     if (!marketData) return;
@@ -107,36 +146,47 @@ export default function MarketDetail() {
       setLiveYesPrice(rawYes);
       setLiveNoPrice(1 - rawYes);
     }
+    if (marketData.liquidity != null) {
+      setLiveLiquidity(marketData.liquidity);
+    } else if (marketData.initialLiquidity != null) {
+      setLiveLiquidity(marketData.initialLiquidity);
+    }
+    if (marketData.volume != null) {
+      setLiveVolume(marketData.volume);
+    } else if (marketData.totalVolume != null) {
+      setLiveVolume(marketData.totalVolume);
+    } else if (marketData.volume24h != null) {
+      setLiveVolume(marketData.volume24h);
+    }
   }, [marketData]);
-  
+
   const imbalanceRatio = Math.max(liveYesPrice, liveNoPrice);
   const isImbalanced = imbalanceRatio >= 0.8;
   const imbalancedSide = liveYesPrice > liveNoPrice ? 'YES' : 'NO';
 
-  // Generate demo trades
   const recentTrades = [
-    { 
+    {
       id: '1',
-      type: 'Buy', 
-      position: 'YES', 
-      amount: 100, 
-      price: currentMarket.yesPrice, 
+      type: 'Buy',
+      position: 'YES',
+      amount: 100,
+      price: currentMarket.yesPrice,
       timestamp: new Date(Date.now() - 300000).toLocaleTimeString()
     },
-    { 
+    {
       id: '2',
-      type: 'Sell', 
-      position: 'NO', 
-      amount: 50, 
-      price: currentMarket.noPrice, 
+      type: 'Sell',
+      position: 'NO',
+      amount: 50,
+      price: currentMarket.noPrice,
       timestamp: new Date(Date.now() - 600000).toLocaleTimeString()
     },
-    { 
+    {
       id: '3',
-      type: 'Buy', 
-      position: 'YES', 
-      amount: 75, 
-      price: currentMarket.yesPrice - 0.05, 
+      type: 'Buy',
+      position: 'YES',
+      amount: 75,
+      price: currentMarket.yesPrice - 0.05,
       timestamp: new Date(Date.now() - 900000).toLocaleTimeString()
     }
   ];
@@ -170,6 +220,18 @@ export default function MarketDetail() {
       return;
     }
 
+    const parsedAmount = parseFloat(amount);
+    const optimisticId = addOptimisticTrade({
+      type: tradeType,
+      position,
+      amount: parsedAmount,
+      price,
+      tokensReceived,
+      fee: estimatedFee,
+      marketId: currentMarket.id,
+      marketQuestion: currentMarket.question,
+    });
+
     setIsLoading(true);
     setPartialFillResult(null);
 
@@ -191,6 +253,7 @@ export default function MarketDetail() {
     };
 
     try {
+      setTransactionPhase('building', 'Building transaction...');
       setTxProgress({ phase: 'building', message: 'Building transaction...' });
       toast.loading('Building transaction...', { id: 'trade-toast' });
 
@@ -198,13 +261,13 @@ export default function MarketDetail() {
         ? await apiService.transactions.buildBuyTokens({
             marketId: currentMarket.id,
             tokenType: position.toLowerCase() as 'yes' | 'no',
-            amount: parseFloat(amount),
+            amount: parsedAmount,
             maxSlippage: 1.0
           }, publicKey)
         : await apiService.transactions.buildSellTokens({
             marketId: currentMarket.id,
             tokenType: position.toLowerCase() as 'yes' | 'no',
-            amount: parseFloat(amount),
+            amount: parsedAmount,
             maxSlippage: 1.0
           }, publicKey);
 
@@ -212,11 +275,13 @@ export default function MarketDetail() {
         throw new Error('Failed to build transaction');
       }
 
+      setTransactionPhase('signing', 'Please sign the transaction in your wallet...');
       setTxProgress({ phase: 'signing', message: 'Waiting for wallet signature...' });
       toast.loading('Please sign the transaction in your wallet...', { id: 'trade-toast' });
 
       const signedXdr = await signTransaction(transactionData.xdr);
 
+      setTransactionPhase('submitting', 'Submitting to Stellar network...');
       setTxProgress({ phase: 'submitting', message: 'Submitting transaction to network...' });
       toast.loading('Submitting transaction to network...', { id: 'trade-toast' });
 
@@ -227,10 +292,10 @@ export default function MarketDetail() {
         throw new Error('Transaction submitted but no hash returned');
       }
 
+      setTransactionPhase('confirming', 'Awaiting network confirmation...', txHash);
       setTxProgress({ phase: 'confirming', message: 'Confirming transaction...', txHash });
       const confirmed = await pollTransaction(txHash);
 
-      // Handle partial fill from response
       const tradeData = confirmed?.data?.trade ?? submitResult?.data?.trade;
       if (tradeData?.isPartial) {
         const pfResult: PartialFillResult = {
@@ -238,15 +303,29 @@ export default function MarketDetail() {
           filledAmount: tradeData.filledAmount,
           remainingAmount: tradeData.remainingAmount,
           fillRatio: tradeData.fillRatio,
-          requestedAmount: tradeData.requestedAmount ?? parseFloat(amount),
+          requestedAmount: tradeData.requestedAmount ?? parsedAmount,
         };
         setPartialFillResult(pfResult);
+        confirmOptimisticTrade(optimisticId, {
+          status: 'partial',
+          txHash,
+          partialFill: {
+            filledAmount: tradeData.filledAmount,
+            remainingAmount: tradeData.remainingAmount,
+            fillRatio: tradeData.fillRatio,
+            requestedAmount: tradeData.requestedAmount ?? parsedAmount,
+          },
+        });
         setTxProgress({ phase: 'success', message: 'Order partially filled', txHash });
         toast.warning(
-          `Partial fill: ${tradeData.filledAmount.toFixed(4)} of ${parseFloat(amount).toFixed(4)} ${position} filled`,
+          `Partial fill: ${tradeData.filledAmount.toFixed(4)} of ${parsedAmount.toFixed(4)} ${position} filled`,
           { id: 'trade-toast', description: `${tradeData.remainingAmount.toFixed(4)} remaining — insufficient liquidity` }
         );
       } else {
+        confirmOptimisticTrade(optimisticId, {
+          status: 'confirmed',
+          txHash,
+        });
         setTxProgress({ phase: 'success', message: 'Transaction confirmed', txHash });
         toast.success(`${tradeType.charAt(0).toUpperCase() + tradeType.slice(1)} order successful!`, {
           id: 'trade-toast',
@@ -256,24 +335,37 @@ export default function MarketDetail() {
 
       setAmount('');
     } catch (error) {
-      console.error('Trade error:', error);
+      const err = error instanceof Error ? error : new Error('Transaction failed');
+      console.error('Trade error:', err);
+
+      rollbackOptimisticTrade(optimisticId, err);
       setTxProgress({
         phase: 'error',
-        message: error instanceof Error ? error.message : 'Transaction failed'
+        message: err.message
       });
-      toast.error(error instanceof Error ? error.message : 'Transaction failed', { id: 'trade-toast' });
+      toast.error(err.message, { id: 'trade-toast' });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleDismissError = useCallback(() => {
+    resetOptimistic();
+    setTxProgress({ phase: 'idle', message: '' });
+  }, [resetOptimistic]);
+
+  const handleRetryTrade = useCallback(() => {
+    resetOptimistic();
+    setTxProgress({ phase: 'idle', message: '' });
+    handleTradeConfirm();
+  }, [resetOptimistic]);
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        {/* Back Button */}
         <Link to="/markets" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" />
-          Back to Markets
+          {t('market.back')}
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -305,7 +397,7 @@ export default function MarketDetail() {
                 {currentMarket.status === 'Trending' && (
                   <Badge className="bg-gradient-to-r from-primary to-secondary">
                     <TrendingUp className="w-3 h-3 mr-1" />
-                    Trending
+                    {t('market.trending')}
                   </Badge>
                 )}
               </div>
@@ -315,30 +407,121 @@ export default function MarketDetail() {
                 {isImbalanced && (
                   <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 flex items-center gap-1.5 animate-pulse">
                     <AlertTriangle className="w-3 h-3" />
-                    Liquidity Imbalance: {imbalancedSide} heavy
+                    {t('market.liquidityImbalance', { side: imbalancedSide })}
                   </Badge>
                 )}
               </div>
               {currentMarket.description && (
                 <p className="text-muted-foreground mb-4">{currentMarket.description}</p>
               )}
-              
-              {/* Current Prices — Live */}
+
+              {/* Current Prices */}
               <div className="grid grid-cols-2 gap-4 mt-6">
                 <div className="p-4 rounded-xl bg-success/10 border border-success/20">
-                  <div className="text-sm text-muted-foreground mb-1">YES Price</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('market.yesPrice')}</div>
                   <div className="text-3xl font-bold text-success">{Math.round(liveYesPrice * 100)}¢</div>
                 </div>
                 <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20">
-                  <div className="text-sm text-muted-foreground mb-1">NO Price</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('market.noPrice')}</div>
                   <div className="text-3xl font-bold text-destructive">{Math.round(liveNoPrice * 100)}¢</div>
                 </div>
               </div>
             </div>
 
+            {/* Optimistic Trade Result Banner */}
+            {optimisticPhase !== 'idle' && (
+              <div
+                className={`glass-card p-4 border ${
+                  isOptimisticError
+                    ? 'bg-red-500/5 border-red-500/20'
+                    : 'bg-success/5 border-success/20'
+                }`}
+              >
+                {isOptimisticPending ? (
+                  <div className="flex items-start gap-3">
+                    <Loader2 className="w-5 h-5 text-primary animate-spin shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-primary">Order Submitted — Pending Confirmation</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {tradeType === 'buy' ? 'Buy' : 'Sell'} {position} · {amount} USDC · {tokensReceived} tokens @ {Math.round(price * 100)}¢
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Your order is being processed. You&apos;ll see the result here shortly.
+                      </p>
+                      <div className="w-full h-1.5 rounded-full bg-muted/50 mt-3 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ease-out ${
+                            isOptimisticError ? 'bg-red-500' : 'bg-gradient-to-r from-primary to-secondary'
+                          }`}
+                          style={{ width: `${PHASE_PERCENT[optimisticPhase]}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-2">{PHASE_LABELS[optimisticPhase]}</p>
+                      {optimisticTxHash && (
+                        <p className="text-[10px] text-muted-foreground mt-1 font-mono break-all">
+                          Tx: {optimisticTxHash}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : isOptimisticError ? (
+                  <div className="flex items-start gap-3">
+                    <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-red-400">Order Failed</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {tradeType === 'buy' ? 'Buy' : 'Sell'} {position} · {amount} USDC · {tokensReceived} tokens @ {Math.round(price * 100)}¢
+                      </p>
+                      <p className="text-xs text-red-400/80 mt-1">{phaseMessage}</p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <Button size="sm" variant="outline" onClick={handleDismissError} className="text-xs h-7">
+                          Dismiss
+                        </Button>
+                        <Button size="sm" onClick={handleRetryTrade} className="text-xs h-7 btn-primary-gradient">
+                          <ArrowRight className="w-3 h-3 mr-1" />
+                          Retry
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-success">
+                        {tradeType === 'buy' ? 'Bought' : 'Sold'} {tokensReceived} {position} @ {Math.round(price * 100)}¢
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {amount} USDC · Fee: {estimatedFee} USDC · Price impact: {priceImpact}%
+                      </p>
+                      {activeTradeId && partialFillResult && (
+                        <div className="mt-2">
+                          <PartialFillBanner result={partialFillResult} tokenType={position} />
+                        </div>
+                      )}
+                      {optimisticTxHash && (
+                        <a
+                          href={`https://stellar.expert/explorer/testnet/tx/${optimisticTxHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+                        >
+                          View on Explorer
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                      <p className="text-[10px] text-muted-foreground mt-2">
+                        The page will update with the latest position data.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Dynamic Odds Visualization */}
             <div className="glass-card p-6">
-              <h2 className="text-lg font-semibold mb-4">Market Performance</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('market.performance')}</h2>
               <OddsChart
                 marketId={currentMarket.id}
                 initialYesPrice={currentMarket.yesPrice}
@@ -349,7 +532,7 @@ export default function MarketDetail() {
 
             {/* Recent Trades */}
             <div className="glass-card p-6">
-              <h2 className="text-lg font-semibold mb-4">Recent Trades</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('market.recentTrades')}</h2>
               <div className="space-y-3">
                 {recentTrades.map((trade) => (
                   <div key={trade.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
@@ -375,12 +558,14 @@ export default function MarketDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            <CreatorReputation creatorAddress={currentMarket.creator} />
+
             {/* Trading Interface */}
             <div className="glass-card p-6 sticky top-24">
               <Tabs value={tradeType} onValueChange={(v) => setTradeType(v as 'buy' | 'sell')}>
                 <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="buy">Buy</TabsTrigger>
-                  <TabsTrigger value="sell">Sell</TabsTrigger>
+                  <TabsTrigger value="buy">{t('market.buy')}</TabsTrigger>
+                  <TabsTrigger value="sell">{t('market.sell')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="buy" className="space-y-4">
@@ -404,7 +589,7 @@ export default function MarketDetail() {
 
                   {/* Amount Input */}
                   <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Amount (USDC)</label>
+                    <label className="text-sm text-muted-foreground mb-2 block">{t('market.amount')}</label>
                     <Input
                       type="number"
                       placeholder="0.00"
@@ -417,30 +602,30 @@ export default function MarketDetail() {
                   {/* Trade Summary */}
                   <div className="p-4 rounded-lg bg-muted/50 space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">You receive</span>
+                      <span className="text-muted-foreground">{t('market.receive')}</span>
                       <span className="font-medium">{tokensReceived} {position}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Price per token</span>
+                      <span className="text-muted-foreground">{t('market.pricePerToken')}</span>
                       <span>{Math.round(price * 100)}¢</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Est. price impact</span>
+                      <span className="text-muted-foreground">{t('market.priceImpact')}</span>
                       <span className="text-warning">{priceImpact}%</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Est. fee</span>
+                      <span className="text-muted-foreground">{t('market.fee')}</span>
                       <span>{estimatedFee} USDC</span>
                     </div>
                     {partialFillResult && (
                       <>
                         <div className="border-t border-border/50 pt-2 mt-1" />
                         <div className="flex justify-between text-sm">
-                          <span className="text-success">Filled</span>
+                          <span className="text-success">{t('market.filled')}</span>
                           <span className="font-medium text-success">{partialFillResult.filledAmount.toFixed(4)} {position}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-warning">Remaining</span>
+                          <span className="text-warning">{t('market.remaining')}</span>
                           <span className="font-medium text-warning">{partialFillResult.remainingAmount.toFixed(4)} {position}</span>
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden mt-1">
@@ -454,35 +639,35 @@ export default function MarketDetail() {
                   </div>
 
                   {/* Trade Button */}
-                  <Button 
+                  <Button
                     className="w-full btn-primary-gradient"
                     onClick={handleTradeStart}
-                    disabled={isLoading || isOffline}
+                    disabled={isLoading || isOffline || isOptimisticPending}
                   >
-                    {isLoading ? (
+                    {isLoading || isOptimisticPending ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Confirming...
+                        {t('market.confirming')}
                       </>
                     ) : isOffline ? (
                       <>
                         <WifiOff className="w-4 h-4 mr-2" />
-                        Offline — Trading Disabled
+                        {t('market.tradingDisabled')}
                       </>
                     ) : !isConnected ? (
-                      'Connect Wallet'
+                      t('market.connectWallet')
                     ) : (
                       `Buy ${position}`
                     )}
                   </Button>
 
                   <p className="text-xs text-center text-muted-foreground">
-                    Est. settlement: ~5 seconds
+                    {t('market.settlement')}
                   </p>
 
                   {txProgress.phase !== 'idle' && (
                     <div className={`p-3 rounded-lg border ${txProgress.phase === 'error' ? 'bg-red-500/10 border-red-500/20' : 'bg-primary/10 border-primary/20'}`}>
-                      <p className="text-xs font-medium mb-1">Transaction Status</p>
+                      <p className="text-xs font-medium mb-1">{t('market.txStatus')}</p>
                       <p className="text-xs text-muted-foreground">{txProgress.message}</p>
                       <div className="w-full h-1.5 rounded bg-muted/50 mt-2 overflow-hidden">
                         <div
@@ -510,7 +695,7 @@ export default function MarketDetail() {
 
                 <TabsContent value="sell" className="space-y-4">
                   <p className="text-center text-muted-foreground py-8">
-                    Connect wallet to view your positions to sell
+                    {t('market.sellPrompt')}
                   </p>
                 </TabsContent>
               </Tabs>
@@ -520,20 +705,24 @@ export default function MarketDetail() {
             <div className="glass-card p-6 space-y-4">
               <h3 className="font-semibold flex items-center gap-2">
                 <Info className="w-4 h-4" />
-                Market Info
+                {t('market.info')}
               </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <TrendingUp className="w-4 h-4" />
-                    Total Volume
+                    {t('market.volume')}
                   </span>
-                  <span className="font-medium">{formatVolume(currentMarket.volume)}</span>
+                  <span className="font-medium">{formatVolume(liveVolume)}</span>
                 </div>
+                <ConfidenceMeter
+                  liquidity={liveLiquidity}
+                  volume={liveVolume}
+                />
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <Users className="w-4 h-4" />
-                    Traders
+                    {t('market.traders')}
                   </span>
                   <span className="font-medium">{currentMarket.traders}</span>
                 </div>
@@ -566,14 +755,14 @@ export default function MarketDetail() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    Created
+                    {t('market.created')}
                   </span>
                   <span className="font-medium">{new Date(currentMarket.createdAt).toLocaleDateString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <Clock className="w-4 h-4" />
-                    Expires
+                    {t('market.expires')}
                   </span>
                   <div className="text-right">
                     <div className="font-medium">{new Date(currentMarket.expirationDate).toLocaleDateString()}</div>
@@ -582,11 +771,11 @@ export default function MarketDetail() {
                 </div>
               </div>
               <div className="pt-4 border-t border-border">
-                <p className="text-xs text-muted-foreground mb-2">Resolution Source</p>
+                <p className="text-xs text-muted-foreground mb-2">{t('market.resolutionSource')}</p>
                 <p className="text-sm">{currentMarket.resolutionSource}</p>
               </div>
               <div className="pt-2">
-                <p className="text-xs text-muted-foreground mb-2">Creator</p>
+                <p className="text-xs text-muted-foreground mb-2">{t('market.creator')}</p>
                 <a href="#" className="text-sm text-primary flex items-center gap-1 hover:underline">
                   {currentMarket.creator}
                   <ExternalLink className="w-3 h-3" />

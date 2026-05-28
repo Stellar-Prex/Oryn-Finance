@@ -27,9 +27,7 @@ const adminRoutes = require('./src/routes/admin');
 const oracleRoutes = require('./src/routes/oracle');
 const liquidityRoutes = require('./src/routes/liquidity');
 const pushNotificationRoutes = require('./src/routes/pushNotifications');
-const volatilityRoutes = require('./src/routes/volatility');
-const treasuryRoutes = require('./src/routes/treasury');
-const liquidityPositionRoutes = require('./src/routes/liquidityPositions');
+
 
 // Import services
 const backgroundJobs = require('./src/services/backgroundJobs');
@@ -37,6 +35,7 @@ const websocketHandler = require('./src/services/websocketHandler');
 const contractEventIndexer = require('./src/services/contractEventIndexer');
 const transactionRetryQueue = require('./src/services/transactionRetryQueue'); // Issue #23
 const pushNotificationService = require('./src/services/pushNotificationService');
+const encryptionService = require('./src/services/encryptionService');
 
 class OrynBackendServer {
   constructor() {
@@ -46,7 +45,22 @@ class OrynBackendServer {
       cors: {
         origin: process.env.FRONTEND_URL || "http://localhost:3000",
         methods: ["GET", "POST"]
-      }
+      },
+      perMessageDeflate: {
+        threshold: 1024,
+        zlibDeflateOptions: {
+          chunkSize: 1024,
+          memLevel: 7,
+          level: 3
+        },
+        zlibInflateOptions: {
+          chunkSize: 10 * 1024
+        },
+        clientNoContextTakeover: true,
+        serverNoContextTakeover: true,
+        serverMaxWindowBits: 10
+      },
+      maxHttpBufferSize: 1e6
     });
     this.port = process.env.PORT || 5001;
   }
@@ -58,6 +72,9 @@ class OrynBackendServer {
 
       // Initialize push notification VAPID keys
       pushNotificationService.initVapid();
+
+      // Initialize encryption service
+      encryptionService.initialize();
 
       // Connect to database (optional for now)
       try {
@@ -188,14 +205,7 @@ class OrynBackendServer {
     // Push notification routes
     this.app.use('/api/push', pushNotificationRoutes);
 
-    // Volatility routes
-    this.app.use('/api/volatility', volatilityRoutes);
 
-    // Treasury routes
-    this.app.use('/api/treasury', treasuryRoutes);
-
-    // Liquidity position routes
-    this.app.use('/api/liquidity-positions', liquidityPositionRoutes);
 
     // Protected routes
     this.app.use('/api/trades', tradeRoutes);
