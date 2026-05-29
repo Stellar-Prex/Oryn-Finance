@@ -15,6 +15,7 @@ import { CountdownTimer } from '@/components/ui/CountdownTimer';
 import { ResolutionPanel } from '@/components/ResolutionPanel';
 import { OddsChart } from '@/components/OddsChart';
 import { CreatorReputation } from '@/components/markets/CreatorReputation';
+import { MarketIntegrityScore } from '@/components/markets/MarketIntegrityScore';
 import MarketDepthChart from '@/components/markets/MarketDepthChart';
 import { useMarketUpdates } from '@/contexts/WebSocketContext';
 import { useOffline } from '@/hooks/useOffline';
@@ -567,6 +568,11 @@ export default function MarketDetail() {
           {/* Sidebar */}
           <div className="space-y-6">
             <CreatorReputation creatorAddress={currentMarket.creator} />
+            <MarketIntegrityScore
+              liquidity={currentMarket.liquidity}
+              volume={currentMarket.volume}
+              resolutionSource={currentMarket.resolutionSource}
+            />
 
             {/* Trading Interface */}
             <div className="glass-card p-6 sticky top-24">
