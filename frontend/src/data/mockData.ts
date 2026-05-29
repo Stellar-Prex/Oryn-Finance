@@ -8,7 +8,7 @@ export interface Market {
   volume: number;
   liquidity: number;
   expirationDate: string;
-  status: 'Active' | 'Resolved' | 'Trending';
+  status: 'Active' | 'Resolved' | 'Trending' | 'Archived';
   creator: string;
   createdAt: string;
   traders: number;

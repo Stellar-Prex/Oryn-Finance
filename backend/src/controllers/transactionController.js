@@ -18,6 +18,13 @@ class TransactionController {
           forVotes: 1420,
           againstVotes: 430,
           abstainVotes: 90,
+          simulation: {
+            projectedOutcome: 'Pass',
+            confidence: 82,
+            riskLevel: 'Moderate',
+            quorumGap: 0,
+            keyRisks: ['Fee increase may reduce short-term trading volume', 'Treasury allocation needs clearer milestones']
+          }
         },
         {
           proposalId: 2,
@@ -27,6 +34,13 @@ class TransactionController {
           forVotes: 820,
           againstVotes: 230,
           abstainVotes: 50,
+          simulation: {
+            projectedOutcome: 'Pass',
+            confidence: 74,
+            riskLevel: 'Low',
+            quorumGap: 120,
+            keyRisks: ['Category expansion could fragment liquidity', 'Moderation rules need to be updated']
+          }
         },
         {
           proposalId: 3,
@@ -36,6 +50,13 @@ class TransactionController {
           forVotes: 980,
           againstVotes: 610,
           abstainVotes: 120,
+          simulation: {
+            projectedOutcome: 'Toss-up',
+            confidence: 58,
+            riskLevel: 'High',
+            quorumGap: -45,
+            keyRisks: ['Treasury drawdown may reduce runway', 'Spending plan is not fully itemized']
+          }
         }
       ];
 

@@ -174,6 +174,14 @@ export const transactionService = {
     return response.data!;
   },
 
+  async getGovernanceProposals(): Promise<any[]> {
+    const response = await apiClient.get<any[]>(ENDPOINTS.GOVERNANCE_PROPOSALS);
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to fetch governance proposals');
+    }
+    return response.data || [];
+  },
+
   // Submit signed transaction
   async submitTransaction(data: {
     xdr: string;
@@ -267,6 +275,9 @@ export const marketService = {
   async getMarkets(filters?: {
     category?: string;
     status?: string;
+    region?: string;
+    archived?: boolean;
+    search?: string;
     page?: number;
     limit?: number;
   }): Promise<any> {
@@ -299,6 +310,52 @@ export const marketService = {
       throw new Error(response.message || 'Failed to fetch market');
     }
     return response.data;
+  },
+
+  async getMarketsByRegion(region: string, filters?: { page?: number; limit?: number }): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    const endpoint = queryParams.toString()
+      ? `${ENDPOINTS.MARKET_BY_REGION(region)}?${queryParams}`
+      : ENDPOINTS.MARKET_BY_REGION(region);
+    const response = await apiClient.get(endpoint);
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to fetch regional markets');
+    }
+    return response.data;
+  },
+
+  async getRecommendedMarkets(params?: { region?: string; country?: string; limit?: number }): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    const endpoint = queryParams.toString()
+      ? `${ENDPOINTS.MARKET_RECOMMENDED}?${queryParams}`
+      : ENDPOINTS.MARKET_RECOMMENDED;
+    const response = await apiClient.get(endpoint);
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to fetch recommended markets');
+    }
+    return response.data;
+  },
+
+  async getRegionStats(): Promise<any[]> {
+    const response = await apiClient.get<any[]>(ENDPOINTS.MARKET_REGION_STATS);
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to fetch region stats');
+    }
+    return response.data!;
   },
 
   // Get historical market prices and volume

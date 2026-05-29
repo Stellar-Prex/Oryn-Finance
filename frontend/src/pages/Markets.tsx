@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Filter, SortAsc, RefreshCw, TrendingUp, WifiOff } from 'lucide-react';
+import { Search, SortAsc, RefreshCw, TrendingUp, WifiOff, Globe, MapPin, ArchiveRestore } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { MarketCard } from '@/components/markets/MarketCard';
@@ -12,9 +12,10 @@ import { useOffline } from '@/hooks/useOffline';
 import { useI18n } from '@/i18n';
 
 type SortOption = 'volume' | 'newest' | 'ending' | 'liquidity' | 'momentum' | 'activity';
+type StatusOption = 'All' | 'Active' | 'Resolved' | 'Trending' | 'Archived';
 
 const categories = ['All', 'Crypto', 'Sports', 'Politics', 'Entertainment', 'Technology', 'Economics', 'Other'];
-const statusFilters = ['All', 'Active', 'Resolved', 'Trending'];
+const statusFilters: StatusOption[] = ['All', 'Active', 'Resolved', 'Trending', 'Archived'];
 const regions = [
   { value: 'all', label: 'All Regions' },
   { value: 'global', label: 'Global' },
@@ -25,6 +26,15 @@ const regions = [
   { value: 'africa', label: 'Africa' },
   { value: 'oceania', label: 'Oceania' },
   { value: 'middle_east', label: 'Middle East' },
+];
+
+const countryPresets = [
+  { value: 'us', label: 'United States', region: 'north_america' },
+  { value: 'gb', label: 'United Kingdom', region: 'europe' },
+  { value: 'ng', label: 'Nigeria', region: 'africa' },
+  { value: 'in', label: 'India', region: 'asia' },
+  { value: 'br', label: 'Brazil', region: 'south_america' },
+  { value: 'jp', label: 'Japan', region: 'asia' },
 ];
 
 // Demo markets data for fallback
@@ -71,8 +81,11 @@ export default function Markets() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [selectedCountry, setSelectedCountry] = useState<string>('us');
   const [sortBy, setSortBy] = useState<SortOption>('volume');
   const [markets, setMarkets] = useState<Market[]>([]);
+  const [recommendedMarkets, setRecommendedMarkets] = useState<Market[]>([]);
+  const [regionalStats, setRegionalStats] = useState<Array<{ _id?: string; region?: string; count: number; totalVolume: number; totalTrades: number; avgLiquidity: number }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCached, setIsCached] = useState(false);
@@ -86,7 +99,14 @@ export default function Markets() {
       try {
         const filters: any = {};
         if (selectedCategory !== 'All') filters.category = selectedCategory.toLowerCase();
-        if (selectedStatus !== 'All') filters.status = selectedStatus.toLowerCase();
+        if (selectedStatus !== 'All') {
+          if (selectedStatus === 'Archived') {
+            filters.status = 'resolved';
+            filters.archived = true;
+          } else {
+            filters.status = selectedStatus.toLowerCase();
+          }
+        }
         if (selectedRegion !== 'all') filters.region = selectedRegion;
         if (searchQuery) filters.search = searchQuery;
         
@@ -102,7 +122,9 @@ export default function Markets() {
           volume: market.totalVolume || 0,
           liquidity: market.initialLiquidity || 0,
           expirationDate: market.expiresAt,
-          status: market.status.charAt(0).toUpperCase() + market.status.slice(1),
+          status: market.archived
+            ? 'Archived'
+            : market.status.charAt(0).toUpperCase() + market.status.slice(1),
           creator: market.creatorWalletAddress,
           createdAt: market.createdAt,
           traders: market.statistics?.uniqueTraders || 0,
@@ -112,15 +134,57 @@ export default function Markets() {
         }));
         
         setMarkets(transformedMarkets);
-      } catch (apiError) {
+        const [recommendedResponse, regionStatsResponse] = await Promise.allSettled([
+          apiService.markets.getRecommendedMarkets({
+            region: selectedRegion !== 'all' ? selectedRegion : undefined,
+            country: selectedCountry,
+            limit: 4,
+          }),
+          apiService.markets.getRegionStats(),
+        ]);
+
+        if (recommendedResponse.status === 'fulfilled') {
+          const recommendedData = recommendedResponse.value?.markets || recommendedResponse.value?.data?.markets || [];
+          const transformedRecommended = Array.isArray(recommendedData)
+            ? recommendedData.map((market: any, index: number) => ({
+                id: market.marketId || market._id || `recommended_${index + 1}`,
+                question: market.question,
+                category: market.category.charAt(0).toUpperCase() + market.category.slice(1),
+                yesPrice: market.currentPrices?.yes || market.currentYesPrice || 0.5,
+                noPrice: market.currentPrices?.no || market.currentNoPrice || 0.5,
+                volume: market.totalVolume || 0,
+                liquidity: market.initialLiquidity || 0,
+                expirationDate: market.expiresAt,
+                status: market.status.charAt(0).toUpperCase() + market.status.slice(1),
+                creator: market.creatorWalletAddress,
+                createdAt: market.createdAt,
+                traders: market.statistics?.uniqueTraders || 0,
+                resolutionSource: market.oracleSource || 'manual',
+                description: market.metadata?.description || market.resolutionCriteria,
+                tags: market.tags || []
+              }))
+            : [];
+          setRecommendedMarkets(transformedRecommended);
+        } else {
+          setRecommendedMarkets([]);
+        }
+
+        if (regionStatsResponse.status === 'fulfilled') {
+          setRegionalStats(Array.isArray(regionStatsResponse.value) ? regionStatsResponse.value : []);
+        } else {
+          setRegionalStats([]);
+        }
+      } catch {
         setIsCached(true);
         setMarkets(demoMarkets);
+        setRecommendedMarkets(demoMarkets.slice(0, 4));
       }
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch markets');
       setIsCached(true);
       setMarkets(demoMarkets);
+      setRecommendedMarkets(demoMarkets.slice(0, 4));
     } finally {
       setLoading(false);
     }
@@ -128,7 +192,7 @@ export default function Markets() {
 
   useEffect(() => {
     fetchMarkets();
-  }, [selectedCategory, selectedStatus, selectedRegion]);
+  }, [selectedCategory, selectedStatus, selectedRegion, selectedCountry]);
 
   const trendingMarkets = useMemo(() => {
     return [...markets]
@@ -172,7 +236,7 @@ export default function Markets() {
     <Layout>
       <div className="container mx-auto px-4 py-12">
         {/* Trending Section */}
-        {trendingMarkets.length > 0 && selectedCategory === 'All' && !searchQuery && (
+        {trendingMarkets.length > 0 && selectedCategory === 'All' && selectedStatus === 'All' && !searchQuery && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-primary" />
@@ -252,6 +316,22 @@ export default function Markets() {
                 </Button>
               ))}
             </div>
+            <div className="flex flex-wrap gap-2">
+              {countryPresets.map((country) => (
+                <Button
+                  key={country.value}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCountry(country.value);
+                    setSelectedRegion(country.region);
+                  }}
+                  className={`tab-button ${selectedCountry === country.value ? 'active' : ''}`}
+                >
+                  {country.label}
+                </Button>
+              ))}
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row justify-between gap-4 mt-4 pt-4 border-t border-white/5">
             <div className="flex flex-wrap gap-2">
@@ -285,6 +365,60 @@ export default function Markets() {
           </div>
         </div>
 
+        {!loading && recommendedMarkets.length > 0 && (
+          <div className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <Globe className="w-6 h-6 text-primary" />
+                  Localized recommendations
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Region and country-aware picks for {countryPresets.find((country) => country.value === selectedCountry)?.label || 'your locale'}.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="w-4 h-4" />
+                {selectedRegion === 'all' ? 'Global coverage' : selectedRegion.replace('_', ' ')}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              {recommendedMarkets.map((market, index) => (
+                <div
+                  key={market.id}
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${index * 70}ms` }}
+                >
+                  <MarketCard market={market} featured />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!loading && regionalStats.length > 0 && (
+          <div className="mb-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {regionalStats.slice(0, 4).map((entry) => (
+              <div key={entry._id || entry.region} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <ArchiveRestore className="w-4 h-4 text-primary" />
+                    <p className="font-medium capitalize">
+                      {(entry._id || entry.region || 'global').replace('_', ' ')}
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{entry.count} markets</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                  <span>{Math.round(entry.totalVolume || 0).toLocaleString()} volume</span>
+                  <span>{Math.round(entry.totalTrades || 0)} trades</span>
+                  <span>{Math.round(entry.avgLiquidity || 0).toLocaleString()} avg liq</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Results */}
         {!loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -313,6 +447,8 @@ export default function Markets() {
                   setSearchQuery('');
                   setSelectedCategory('All');
                   setSelectedStatus('All');
+                  setSelectedRegion('all');
+                  setSelectedCountry('us');
                 }}
               >
                 {t('markets.clearFilters')}

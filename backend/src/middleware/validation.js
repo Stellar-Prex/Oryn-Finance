@@ -290,6 +290,11 @@ const queryValidations = {
       .optional()
       .isIn(['active', 'resolved', 'cancelled', 'expired'])
       .withMessage('Invalid status'),
+
+    query('archived')
+      .optional()
+      .isIn(['true', 'false'])
+      .withMessage('Archived must be true or false'),
     
     query('sortBy')
       .optional()

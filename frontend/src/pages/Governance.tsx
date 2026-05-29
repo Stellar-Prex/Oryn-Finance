@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Loader2, RefreshCcw, ShieldCheck, Vote, Wallet } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2, RefreshCcw, ShieldCheck, Vote, Wallet } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { MagicCard } from '@/components/magicui/magic-card';
 import { Badge } from '@/components/ui/badge';
@@ -129,6 +129,10 @@ export default function Governance() {
     return { total: proposals.length, active, executed, votes };
   }, [proposals]);
 
+  const simulationProposal = useMemo(() => {
+    return proposals.find((proposal) => proposal.status === 'active') || proposals[0] || null;
+  }, [proposals]);
+
   const userVotes = useMemo(() => {
     if (!publicKey) {
       return new Map<string, GovernanceVoteChoice>();
@@ -219,6 +223,48 @@ export default function Governance() {
             </MagicCard>
           ))}
         </div>
+
+        {simulationProposal && (
+          <MagicCard className="mt-8 rounded-3xl border border-white/10 bg-black/30 p-6">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-300" />
+                  <Badge className="border border-amber-500/30 bg-amber-500/10 text-amber-200">Simulation</Badge>
+                </div>
+                <h2 className="mt-3 text-2xl font-semibold">Governance execution preview</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Preview the likely execution outcome before you vote. The preview combines current tallies with a simple risk model so you can see what is likely to pass and what could block execution.
+                </p>
+                <div className="mt-6 grid gap-3 md:grid-cols-3">
+                  <div className="rounded-2xl bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Projected outcome</p>
+                    <p className="mt-2 text-xl font-semibold">{simulationProposal.simulation?.projectedOutcome || 'Unknown'}</p>
+                  </div>
+                  <div className="rounded-2xl bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Confidence</p>
+                    <p className="mt-2 text-xl font-semibold">{simulationProposal.simulation?.confidence ?? 0}%</p>
+                  </div>
+                  <div className="rounded-2xl bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Risk level</p>
+                    <p className="mt-2 text-xl font-semibold">{simulationProposal.simulation?.riskLevel || 'Unknown'}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 lg:w-96">
+                <p className="text-sm font-medium">Highlighted risks</p>
+                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                  {(simulationProposal.simulation?.keyRisks || []).map((risk: string) => (
+                    <li key={risk} className="flex items-start gap-2">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-300" />
+                      <span>{risk}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </MagicCard>
+        )}
 
         <div className="mt-8 space-y-6">
           {isLoading ? (
@@ -330,6 +376,19 @@ export default function Governance() {
                             );
                           })}
                         </div>
+
+                        {proposal.simulation && (
+                          <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3 text-sm">
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Preview</span>
+                              <span className="font-medium">{proposal.simulation.projectedOutcome}</span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                              <span>Confidence {proposal.simulation.confidence}%</span>
+                              <span>Risk {proposal.simulation.riskLevel}</span>
+                            </div>
+                          </div>
+                        )}
 
                         <div className="mt-5 grid grid-cols-3 gap-2">
                           {voteOptions.map((choice) => {
