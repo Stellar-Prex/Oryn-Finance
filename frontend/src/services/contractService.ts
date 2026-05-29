@@ -143,12 +143,60 @@ export class ContractService {
   }
 
   static async getGovernanceProposals(limit = 250): Promise<GovernanceProposal[]> {
-    const events = await apiService.analytics.getIndexedEvents({
-      contractName: 'GOVERNANCE',
-      limit,
-    });
+    try {
+      const events = await apiService.analytics.getIndexedEvents({
+        contractName: 'GOVERNANCE',
+        limit,
+      });
 
-    return buildGovernanceProposals(events);
+      const indexedProposals = buildGovernanceProposals(events);
+      if (indexedProposals.length > 0) {
+        return indexedProposals;
+      }
+    } catch {
+      // Fall through to the static transaction endpoint below.
+    }
+
+    const fallbackProposals = await apiService.transactions.getGovernanceProposals();
+    return (fallbackProposals || []).map((proposal: any) => ({
+      id: String(proposal.proposalId ?? proposal.id),
+      title: String(proposal.title ?? `Proposal #${proposal.proposalId ?? proposal.id}`),
+      description: String(proposal.description ?? ''),
+      proposer: proposal.proposer ?? null,
+      createdAt: proposal.createdAt ?? null,
+      deadline: proposal.deadline ?? null,
+      executedAt: proposal.executedAt ?? null,
+      status: (() => {
+        const normalizedStatus = String(proposal.status || 'active').toLowerCase();
+        if (normalizedStatus === 'pending') return 'active';
+        if (normalizedStatus === 'active') return 'active';
+        if (normalizedStatus === 'executed') return 'executed';
+        return 'ended';
+      })() as GovernanceProposal['status'],
+      yesVotes: Number(proposal.forVotes ?? proposal.yesVotes ?? 0),
+      noVotes: Number(proposal.againstVotes ?? proposal.noVotes ?? 0),
+      abstainVotes: Number(proposal.abstainVotes ?? 0),
+      totalVotes: Number(proposal.forVotes ?? proposal.yesVotes ?? 0) + Number(proposal.againstVotes ?? proposal.noVotes ?? 0) + Number(proposal.abstainVotes ?? 0),
+      yesShare: 0,
+      noShare: 0,
+      abstainShare: 0,
+      votes: [],
+      simulation: proposal.simulation || {
+        projectedOutcome: 'Unknown',
+        confidence: 0,
+        riskLevel: 'Unknown',
+        quorumGap: 0,
+        keyRisks: [],
+      },
+    })).map((proposal) => {
+      const totalVotes = proposal.totalVotes;
+      return {
+        ...proposal,
+        yesShare: totalVotes > 0 ? (proposal.yesVotes / totalVotes) * 100 : 0,
+        noShare: totalVotes > 0 ? (proposal.noVotes / totalVotes) * 100 : 0,
+        abstainShare: totalVotes > 0 ? (proposal.abstainVotes / totalVotes) * 100 : 0,
+      };
+    });
   }
 
   static async buildTransaction(data: {

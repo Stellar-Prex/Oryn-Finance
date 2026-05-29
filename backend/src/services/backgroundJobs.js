@@ -377,7 +377,7 @@ class BackgroundJobs {
           resolvedAt: { $lt: ninetyDaysAgo }
         },
         {
-          $set: { archived: true }
+          $set: { archived: true, archivedAt: new Date() }
         }
       );
       

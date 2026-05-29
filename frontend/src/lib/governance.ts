@@ -34,6 +34,13 @@ export interface GovernanceProposal {
   noShare: number;
   abstainShare: number;
   votes: GovernanceVote[];
+  simulation?: {
+    projectedOutcome?: string;
+    confidence?: number;
+    riskLevel?: string;
+    quorumGap?: number;
+    keyRisks?: string[];
+  };
 }
 
 const PROPOSAL_ID_KEYS = ['proposalId', 'proposalID', 'proposal_id', 'id'];
@@ -123,6 +130,13 @@ function defaultProposal(id: string): GovernanceProposal {
     noShare: 0,
     abstainShare: 0,
     votes: [],
+    simulation: {
+      projectedOutcome: 'Unknown',
+      confidence: 0,
+      riskLevel: 'Unknown',
+      quorumGap: 0,
+      keyRisks: [],
+    },
   };
 }
 
@@ -211,11 +225,11 @@ export function buildGovernanceProposals(events: IndexedGovernanceEvent[] = []):
       const totalVotes = yesVotes + noVotes + abstainVotes;
       const deadlineMs = proposal.deadline ? new Date(proposal.deadline).getTime() : null;
 
-      return {
-        ...proposal,
-        status:
-          proposal.status === 'executed'
-            ? 'executed'
+    return {
+      ...proposal,
+      status:
+        proposal.status === 'executed'
+          ? 'executed'
             : deadlineMs && deadlineMs < now
               ? 'ended'
               : 'active',
@@ -226,6 +240,29 @@ export function buildGovernanceProposals(events: IndexedGovernanceEvent[] = []):
         yesShare: totalVotes > 0 ? (yesVotes / totalVotes) * 100 : 0,
         noShare: totalVotes > 0 ? (noVotes / totalVotes) * 100 : 0,
         abstainShare: totalVotes > 0 ? (abstainVotes / totalVotes) * 100 : 0,
+        simulation: {
+          projectedOutcome:
+            totalVotes === 0
+              ? 'No signal'
+              : yesVotes >= noVotes && yesVotes >= abstainVotes
+                ? 'Likely pass'
+                : noVotes > yesVotes
+                  ? 'Likely fail'
+                  : 'Toss-up',
+          confidence:
+            totalVotes === 0
+              ? 0
+              : Math.min(95, Math.round(Math.abs(yesVotes - noVotes) / Math.max(totalVotes, 1) * 100) + 40),
+          riskLevel:
+            totalVotes === 0
+              ? 'Unknown'
+              : yesVotes >= noVotes ? 'Moderate' : 'High',
+          quorumGap: Math.max(0, 100 - totalVotes),
+          keyRisks: [
+            proposal.status === 'ended' ? 'Voting window has closed' : 'Proposal is still subject to change',
+            yesVotes < noVotes ? 'Negative sentiment is currently ahead' : 'Execution still depends on quorum',
+          ],
+        },
       };
     })
     .sort(sortByRecency);

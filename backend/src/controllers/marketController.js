@@ -13,6 +13,7 @@ class MarketController {
       category,
       region,
       status = 'active',
+      archived,
       sortBy = 'createdAt',
       sortOrder = 'desc',
       search,
@@ -25,6 +26,7 @@ class MarketController {
       !category && 
       !region && 
       status === 'active' && 
+      !archived &&
       sortBy === 'createdAt' && 
       sortOrder === 'desc' && 
       !search && 
@@ -49,6 +51,8 @@ class MarketController {
     if (category) filter.category = category;
     if (region) filter.region = region;
     if (status) filter.status = status;
+    if (archived === 'true') filter.archived = true;
+    if (archived === 'false') filter.archived = false;
     
     if (tags) {
       const tagList = Array.isArray(tags) ? tags : tags.split(',');
@@ -140,7 +144,7 @@ class MarketController {
     logger.info('Markets retrieved from DB', {
       count: markets.length,
       total,
-      filters: { category, status, search },
+      filters: { category, status, archived, search },
       user: req.user?.walletAddress
     });
 
@@ -1017,13 +1021,44 @@ class MarketController {
 
   // Get recommended markets for a user based on region and category
   static async getRecommendedMarkets(req, res) {
-    const { limit = 10, region: preferredRegion } = req.query;
+    const { limit = 10, region: preferredRegion, country } = req.query;
 
-    const userRegion = preferredRegion || req.user?.userData?.region || 'global';
+    const COUNTRY_TO_REGION = {
+      us: 'north_america',
+      usa: 'north_america',
+      united_states: 'north_america',
+      ca: 'north_america',
+      canada: 'north_america',
+      gb: 'europe',
+      uk: 'europe',
+      united_kingdom: 'europe',
+      de: 'europe',
+      fr: 'europe',
+      es: 'europe',
+      ng: 'africa',
+      gh: 'africa',
+      za: 'africa',
+      ke: 'africa',
+      in: 'asia',
+      pk: 'asia',
+      sg: 'asia',
+      jp: 'asia',
+      au: 'oceania',
+      nz: 'oceania',
+      br: 'south_america',
+      ar: 'south_america',
+      mx: 'north_america',
+      ae: 'middle_east',
+      sa: 'middle_east',
+    };
+
+    const normalizedCountry = String(country || '').trim().toLowerCase();
+    const userRegion = preferredRegion || COUNTRY_TO_REGION[normalizedCountry] || req.user?.userData?.region || 'global';
 
     const markets = await Market.find({
       status: 'active',
       expiresAt: { $gt: new Date() },
+      archived: { $ne: true },
       $or: [
         { region: userRegion },
         { region: 'global' }
@@ -1038,6 +1073,7 @@ class MarketController {
       data: {
         markets,
         region: userRegion,
+        country: normalizedCountry || null,
         recommendationType: 'region_based'
       }
     });

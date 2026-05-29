@@ -17,6 +17,7 @@ import {
   Wallet,
   Clock,
   Circle,
+  Award,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Layout } from '@/components/layout/Layout';
@@ -34,6 +35,15 @@ import { useWallet } from '@/contexts/WalletContext';
 import { apiService } from '@/services/apiService';
 import { Position } from '@/data/mockData';
 import { MagicCard } from '@/components/magicui/magic-card';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 type TradeStatusFilter = 'all' | 'confirmed' | 'partially_filled' | 'pending' | 'failed' | 'cancelled';
 type TradeTypeFilter = 'all' | 'buy' | 'sell';
@@ -589,6 +599,22 @@ export default function Portfolio() {
   const totalValue = userPositions.reduce((sum, position) => sum + (position.amount * position.currentPrice), 0);
   const totalPnL = userStats.unrealizedPnL;
   const totalInvested = userPositions.reduce((sum, position) => sum + (position.amount * position.avgPrice), 0);
+  const realizedRoi = totalInvested > 0 ? (userStats.netPnL / totalInvested) * 100 : 0;
+  const performanceSeries = [...tradeHistory]
+    .sort((left, right) => new Date(getTradeTimestamp(left)).getTime() - new Date(getTradeTimestamp(right)).getTime())
+    .slice(-12)
+    .reduce<Array<{ label: string; pnl: number; profit: number }>>((series, trade, index) => {
+      const previous = series[series.length - 1]?.pnl || 0;
+      const profit = Number(trade.currentPnL ?? trade.realizedPnL ?? 0);
+
+      series.push({
+        label: `T${index + 1}`,
+        pnl: previous + profit,
+        profit,
+      });
+
+      return series;
+    }, []);
 
   return (
     <Layout>
@@ -692,6 +718,80 @@ export default function Portfolio() {
             <p className="text-2xl font-bold">{formatCurrency(lpMetrics.netReturn)}</p>
             <p className="text-xs text-muted-foreground">LP Net Return</p>
           </div>
+
+          <MagicCard className="glass-card p-6 md:col-span-2 xl:col-span-4" gradientColor="#262626">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <Award className="w-5 h-5 text-primary" />
+                  <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Trader performance profile</p>
+                </div>
+                <h2 className="text-2xl font-semibold">Evaluate your trading edge over time</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Tracks win rate, return on invested capital, and a rolling P&amp;L curve so you can see how your decisions compound.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-black/20 p-3">
+                  <p className="text-muted-foreground">ROI</p>
+                  <p className={`mt-1 text-lg font-semibold ${realizedRoi >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {realizedRoi >= 0 ? '+' : ''}{realizedRoi.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="rounded-xl bg-black/20 p-3">
+                  <p className="text-muted-foreground">Win rate</p>
+                  <p className="mt-1 text-lg font-semibold">{userStats.winRate.toFixed(1)}%</p>
+                </div>
+                <div className="rounded-xl bg-black/20 p-3">
+                  <p className="text-muted-foreground">Net P&amp;L</p>
+                  <p className={`mt-1 text-lg font-semibold ${userStats.netPnL >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {userStats.netPnL >= 0 ? '+' : ''}{formatCurrency(userStats.netPnL)}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-black/20 p-3">
+                  <p className="text-muted-foreground">Risk load</p>
+                  <p className="mt-1 text-lg font-semibold">{tradeHistory.length} trades</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 h-72">
+              {performanceSeries.length === 0 ? (
+                <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-white/10 text-sm text-muted-foreground">
+                  Trade history will appear here once you start building a track record.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={performanceSeries}>
+                    <defs>
+                      <linearGradient id="portfolioPnl" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--chart-yes))" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="hsl(var(--chart-yes))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" />
+                    <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `$${Number(value).toFixed(0)}`} />
+                    <Tooltip
+                      formatter={(value: any) => formatCurrency(Number(value || 0))}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '12px',
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="pnl"
+                      stroke="hsl(var(--chart-yes))"
+                      fill="url(#portfolioPnl)"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </MagicCard>
 
         <MagicCard className="glass-card p-6 mb-8" gradientColor="#262626">
           <h2 className="text-xl font-semibold mb-6">Active Positions</h2>

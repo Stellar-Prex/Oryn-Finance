@@ -59,6 +59,15 @@ const marketSchema = new mongoose.Schema({
     default: 'active',
     index: true
   },
+  archived: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  archivedAt: {
+    type: Date,
+    default: null
+  },
   totalVolume: {
     type: Number,
     default: 0,

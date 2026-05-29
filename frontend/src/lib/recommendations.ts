@@ -134,7 +134,7 @@ function uniqueMarkets(markets: Market[]): Market[] {
 }
 
 export function getRecommendationGroups(markets: Market[], trades: TradeInput[], limit = 4): RecommendationGroup[] {
-  const activeMarkets = uniqueMarkets(markets).filter((market) => market.status !== 'Resolved');
+  const activeMarkets = uniqueMarkets(markets).filter((market) => market.status !== 'Resolved' && market.status !== 'Archived');
   const tradedMarketIds = new Set(trades.map(getTradeMarketId).filter(Boolean) as string[]);
   const personalized = [...activeMarkets]
     .map((market) => ({ market, score: scoreMarket(market, trades, tradedMarketIds) }))
