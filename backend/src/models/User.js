@@ -140,6 +140,120 @@ const userSchema = new mongoose.Schema({
       default: 0.01, // 1%
       min: 0.001,
       max: 0.1
+    },
+    localization: {
+      timezone: {
+        type: String,
+        default: 'UTC',
+        description: 'IANA timezone string (e.g., America/New_York, Europe/London, Asia/Tokyo)'
+      },
+      language: {
+        type: String,
+        default: 'en',
+        enum: ['en', 'es', 'fr', 'de', 'ja', 'zh', 'pt', 'ru', 'ko']
+      },
+      locale: {
+        type: String,
+        default: 'en-US'
+      },
+      dateFormat: {
+        type: String,
+        default: 'MM/DD/YYYY',
+        enum: ['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD']
+      },
+      timeFormat: {
+        type: String,
+        default: '12h',
+        enum: ['12h', '24h']
+      },
+      notifyTimezoneEvents: {
+        type: Boolean,
+        default: true
+      },
+      showCountdownsInLocalTime: {
+        type: Boolean,
+        default: true
+      }
+    },
+    mobileTrading: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      quickTradePanel: {
+        type: Boolean,
+        default: true
+      },
+      optimizedCharts: {
+        type: Boolean,
+        default: true
+      },
+      gestureEnabled: {
+        type: Boolean,
+        default: true
+      },
+      oneClickTrading: {
+        type: Boolean,
+        default: false
+      },
+      defaultOrderSize: {
+        type: Number,
+        default: 100,
+        min: 1
+      },
+      defaultSlippageMobile: {
+        type: Number,
+        default: 0.02, // 2% for mobile (slightly higher than desktop)
+        min: 0.001,
+        max: 0.1
+      }
+    },
+    whaleAlerts: {
+      enabled: {
+        type: Boolean,
+        default: true
+      },
+      minSeverity: {
+        type: String,
+        enum: ['low', 'medium', 'high', 'critical'],
+        default: 'medium'
+      },
+      notifyByEmail: {
+        type: Boolean,
+        default: false
+      },
+      notifyByPush: {
+        type: Boolean,
+        default: true
+      },
+      watchedMarkets: [{
+        type: String
+      }],
+      mutedWallets: [{
+        type: String
+      }]
+    },
+    appealNotifications: {
+      enabled: {
+        type: Boolean,
+        default: true
+      },
+      notifyOnSubmission: {
+        type: Boolean,
+        default: true
+      },
+      notifyOnReview: {
+        type: Boolean,
+        default: true
+      },
+      notifyOnResolution: {
+        type: Boolean,
+        default: true
+      },
+      notifyAsReviewer: {
+        type: Boolean,
+        default: true
+      }
     }
   },
   wallet: {

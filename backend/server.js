@@ -37,6 +37,10 @@ const geoFailoverRoutes = require('./src/routes/geoFailover');
 const explorerRoutes = require('./src/routes/explorer');                   // Issue #83
 const contractVersionRoutes = require('./src/routes/contractVersions');    // Issue #150
 const contractDependencyRoutes = require('./src/routes/contractDependencies'); // Issue #124
+const timezonesRoutes = require('./src/routes/timezones');                 // Issue #166: Multi-Timezone Event Scheduling
+const whaleActivityRoutes = require('./src/routes/whaleActivity');         // Issue #169: Whale Activity Monitoring
+const appealsRoutes = require('./src/routes/appeals');                     // Issue #167: Market Resolution Appeals
+const mobileTradingRoutes = require('./src/routes/mobileTrading');         // Issue #168: Mobile Trading Mode
 
 
 // Import services
@@ -241,6 +245,18 @@ class OrynBackendServer {
 
     // Contract dependency mapping routes (Issue #124)
     this.app.use('/api/contracts/dependencies', contractDependencyRoutes);
+
+    // Multi-Timezone Event Scheduling routes (Issue #166)
+    this.app.use('/api/timezones', timezonesRoutes);
+
+    // Whale Activity Monitoring routes (Issue #169)
+    this.app.use('/api/whale-activity', whaleActivityRoutes);
+
+    // Market Resolution Appeals routes (Issue #167)
+    this.app.use('/api/appeals', appealsRoutes);
+
+    // Mobile Trading Mode routes (Issue #168)
+    this.app.use('/api/mobile-trading', mobileTradingRoutes);
 
     // Protected routes
     this.app.use('/api/trades', tradeRoutes);
