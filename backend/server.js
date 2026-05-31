@@ -246,6 +246,18 @@ class OrynBackendServer {
     // Contract dependency mapping routes (Issue #124)
     this.app.use('/api/contracts/dependencies', contractDependencyRoutes);
 
+    // Multi-Timezone Event Scheduling routes (Issue #166)
+    this.app.use('/api/timezones', timezonesRoutes);
+
+    // Whale Activity Monitoring routes (Issue #169)
+    this.app.use('/api/whale-activity', whaleActivityRoutes);
+
+    // Market Resolution Appeals routes (Issue #167)
+    this.app.use('/api/appeals', appealsRoutes);
+
+    // Mobile Trading Mode routes (Issue #168)
+    this.app.use('/api/mobile-trading', mobileTradingRoutes);
+
     // Protected routes
     this.app.use('/api/trades', tradeRoutes);
     this.app.use('/api/users', userRoutes);
