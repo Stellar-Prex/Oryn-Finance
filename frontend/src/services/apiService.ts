@@ -1118,11 +1118,17 @@ export const riskService = {
   },
 };
 
-// Market Sentiment Services (#116)
+// Market Sentiment Services (#116, #162)
 export const sentimentService = {
   async getAggregated(): Promise<any> {
     const response = await apiClient.get(ENDPOINTS.SENTIMENT_AGGREGATED);
     if (!response.success) throw new Error(response.message || 'Failed to fetch sentiment');
+    return response.data;
+  },
+  async getHistory(limit?: number): Promise<any> {
+    const endpoint = limit ? `${ENDPOINTS.SENTIMENT_HISTORY}?limit=${limit}` : ENDPOINTS.SENTIMENT_HISTORY;
+    const response = await apiClient.get(endpoint);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch sentiment history');
     return response.data;
   },
   async getMarketSentiment(marketId: string): Promise<any> {
@@ -1132,64 +1138,36 @@ export const sentimentService = {
   },
 };
 
-// Governance Delegation Services (#132)
-export const governanceDelegationService = {
-  async getMyDelegation(): Promise<any> {
-    const response = await apiClient.get(ENDPOINTS.GOVERNANCE_DELEGATE);
-    if (!response.success) throw new Error(response.message || 'Failed to fetch delegation');
-    return response.data;
-  },
-  async getDashboard(): Promise<any> {
-    const response = await apiClient.get(ENDPOINTS.GOVERNANCE_DELEGATE_DASHBOARD);
-    if (!response.success) throw new Error(response.message || 'Failed to fetch delegation dashboard');
-    return response.data;
-  },
-  async delegate(delegateAddress: string): Promise<any> {
-    const response = await apiClient.post(ENDPOINTS.GOVERNANCE_DELEGATE, { delegate: delegateAddress });
-    if (!response.success) throw new Error(response.message || 'Failed to delegate');
-    return response.data;
-  },
-  async revoke(): Promise<any> {
-    const response = await apiClient.delete(ENDPOINTS.GOVERNANCE_DELEGATE);
-    if (!response.success) throw new Error(response.message || 'Failed to revoke delegation');
+// Oracle Consensus Services (#164)
+export const oracleConsensusService = {
+  async getConsensus(): Promise<any> {
+    const response = await apiClient.get(ENDPOINTS.ORACLE_CONSENSUS);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch oracle consensus');
     return response.data;
   },
 };
 
-// Cross-Market Correlation Services (#135)
-export const correlationService = {
-  async getHeatmap(ids: string[]): Promise<any> {
-    const response = await apiClient.get(`${ENDPOINTS.CORRELATION_HEATMAP}?ids=${ids.join(',')}`);
-    if (!response.success) throw new Error(response.message || 'Failed to fetch correlation heatmap');
-    return response.data;
-  },
-  async getRelated(marketId: string, limit = 5): Promise<any> {
-    const response = await apiClient.get(`${ENDPOINTS.CORRELATION_RELATED(marketId)}?limit=${limit}`);
-    if (!response.success) throw new Error(response.message || 'Failed to fetch related markets');
+// Liquidity Rebalancing Services (#163)
+export const liquidityRebalancingService = {
+  async getSuggestions(): Promise<any> {
+    const response = await apiClient.get(ENDPOINTS.LIQUIDITY_REBALANCING);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch rebalancing suggestions');
     return response.data;
   },
 };
 
-// Custom Market Alerts Services (#138)
-export const marketAlertsService = {
-  async listAlerts(): Promise<any[]> {
-    const response = await apiClient.get(ENDPOINTS.MARKET_ALERTS);
-    if (!response.success) throw new Error(response.message || 'Failed to fetch alerts');
+// Governance Timelock Services (#165)
+export const governanceTimelockService = {
+  async getActions(status?: string): Promise<any> {
+    const endpoint = status ? `${ENDPOINTS.GOVERNANCE_TIMELOCK}?status=${status}` : ENDPOINTS.GOVERNANCE_TIMELOCK;
+    const response = await apiClient.get(endpoint);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch timelock actions');
     return response.data;
   },
-  async createAlert(payload: { marketId: string; alertType: string; threshold?: number }): Promise<any> {
-    const response = await apiClient.post(ENDPOINTS.MARKET_ALERTS, payload);
-    if (!response.success) throw new Error(response.message || 'Failed to create alert');
+  async getAction(id: string): Promise<any> {
+    const response = await apiClient.get(ENDPOINTS.GOVERNANCE_TIMELOCK_ACTION(id));
+    if (!response.success) throw new Error(response.message || 'Timelock action not found');
     return response.data;
-  },
-  async updateAlert(alertId: string, payload: { threshold?: number; active?: boolean }): Promise<any> {
-    const response = await apiClient.put(ENDPOINTS.MARKET_ALERT(alertId), payload);
-    if (!response.success) throw new Error(response.message || 'Failed to update alert');
-    return response.data;
-  },
-  async deleteAlert(alertId: string): Promise<void> {
-    const response = await apiClient.delete(ENDPOINTS.MARKET_ALERT(alertId));
-    if (!response.success) throw new Error(response.message || 'Failed to delete alert');
   },
 };
 
@@ -1213,7 +1191,7 @@ export const apiService = {
   insurance: insuranceService,
   risk: riskService,
   sentiment: sentimentService,
-  governanceDelegation: governanceDelegationService,
-  correlation: correlationService,
-  marketAlerts: marketAlertsService,
+  oracleConsensus: oracleConsensusService,
+  liquidityRebalancing: liquidityRebalancingService,
+  governanceTimelock: governanceTimelockService,
 };

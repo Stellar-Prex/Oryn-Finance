@@ -37,9 +37,8 @@ const geoFailoverRoutes = require('./src/routes/geoFailover');
 const explorerRoutes = require('./src/routes/explorer');                   // Issue #83
 const contractVersionRoutes = require('./src/routes/contractVersions');    // Issue #150
 const contractDependencyRoutes = require('./src/routes/contractDependencies'); // Issue #124
-const governanceDelegationRoutes = require('./src/routes/governanceDelegation'); // Issue #132
-const correlationRoutes = require('./src/routes/correlation');                   // Issue #135
-const marketAlertsRoutes = require('./src/routes/marketAlerts');                 // Issue #138
+const liquidityRebalancingRoutes = require('./src/routes/liquidityRebalancing'); // Issue #163
+const governanceTimelockRoutes = require('./src/routes/governanceTimelock'); // Issue #165
 
 
 // Import services
@@ -229,6 +228,8 @@ class OrynBackendServer {
     this.app.use('/api/risk', riskAnalyticsRoutes);
     this.app.use('/api/sentiment', sentimentRoutes);
     this.app.use('/api/geo-failover', geoFailoverRoutes);
+    this.app.use('/api/liquidity', liquidityRebalancingRoutes); // Issue #163 (rebalancing sub-route)
+    this.app.use('/api/governance/timelock', governanceTimelockRoutes); // Issue #165
 
     // Transaction routes (mixed auth - some endpoints require auth, others don't)
     this.app.use('/api/transactions', transactionRoutes);
@@ -245,14 +246,17 @@ class OrynBackendServer {
     // Contract dependency mapping routes (Issue #124)
     this.app.use('/api/contracts/dependencies', contractDependencyRoutes);
 
-    // Governance delegation routes (Issue #132)
-    this.app.use('/api/governance/delegate', governanceDelegationRoutes);
+    // Multi-Timezone Event Scheduling routes (Issue #166)
+    this.app.use('/api/timezones', timezonesRoutes);
 
-    // Cross-market correlation routes (Issue #135)
-    this.app.use('/api/correlation', correlationRoutes);
+    // Whale Activity Monitoring routes (Issue #169)
+    this.app.use('/api/whale-activity', whaleActivityRoutes);
 
-    // Custom market alerts routes (Issue #138)
-    this.app.use('/api/alerts', marketAlertsRoutes);
+    // Market Resolution Appeals routes (Issue #167)
+    this.app.use('/api/appeals', appealsRoutes);
+
+    // Mobile Trading Mode routes (Issue #168)
+    this.app.use('/api/mobile-trading', mobileTradingRoutes);
 
     // Protected routes
     this.app.use('/api/trades', tradeRoutes);

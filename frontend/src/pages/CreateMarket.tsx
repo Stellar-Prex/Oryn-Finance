@@ -15,6 +15,7 @@ import { useWallet } from '@/contexts/WalletContext';
 import { apiService } from '@/services/apiService';
 import { toast } from 'sonner';
 import { useI18n } from '@/i18n';
+import { PredictionTemplates, MarketTemplate } from '@/components/markets/PredictionTemplates';
 
 const categories = ['Crypto', 'Sports', 'Politics', 'Entertainment'];
 
@@ -56,6 +57,17 @@ export default function CreateMarket() {
     }
 
     throw new Error('Transaction confirmation timed out');
+  };
+
+  const handleTemplateSelect = (template: MarketTemplate) => {
+    setQuestion(template.question);
+    setCategory(template.category);
+    setResolutionSource(template.resolutionSource);
+    setInitialLiquidity(String(template.suggestedLiquidity));
+    setFeePercentage([template.suggestedFee]);
+    const d = new Date();
+    d.setDate(d.getDate() + template.daysUntilExpiry);
+    setEndDate(d);
   };
 
   const handleCreate = async () => {
@@ -175,6 +187,7 @@ export default function CreateMarket() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Form */}
           <div className="lg:col-span-3 space-y-6">
+            <PredictionTemplates onSelect={handleTemplateSelect} />
             <div className="glass-card p-6 space-y-6">
               {/* Question */}
               <div className="space-y-2">
