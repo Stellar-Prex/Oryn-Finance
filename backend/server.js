@@ -51,6 +51,7 @@ const correlationRoutes = require('./src/routes/correlation');
 const marketAlertsRoutes = require('./src/routes/marketAlerts');
 const messagesRoutes = require('./src/routes/messages');
 const reportsRoutes = require('./src/routes/reports');
+const riskAssessmentRoutes = require('./src/routes/riskAssessment'); // Issue #187
 
 
 // Import services
@@ -248,6 +249,7 @@ class OrynBackendServer {
     this.app.use('/api/governance/delegate', governanceDelegationRoutes);
     this.app.use('/api/correlation', correlationRoutes);
     this.app.use('/api/market-alerts', marketAlertsRoutes);
+    this.app.use('/api/risk-assessment', riskAssessmentRoutes); // Issue #187
 
     // Transaction routes (mixed auth - some endpoints require auth, others don't)
     this.app.use('/api/transactions', transactionRoutes);
