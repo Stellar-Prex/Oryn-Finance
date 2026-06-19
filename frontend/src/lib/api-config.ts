@@ -76,6 +76,8 @@ export const ENDPOINTS = {
   LIQUIDITY_POOLS: '/liquidity/pools',
   LIQUIDITY_POOL: (marketId: string) => `/liquidity/pools/${marketId}`,
   LIQUIDITY_DEPTH: (marketId: string) => `/liquidity/pools/${marketId}/depth`,
+  YIELD_COMPARISON: '/yield/comparison',
+  YIELD_HISTORY: (marketId: string) => `/yield/history/${marketId}`,
 
   // Markets - Extended
   MARKET_BY_REGION: (region: string) => `/markets/region/${region}`,
