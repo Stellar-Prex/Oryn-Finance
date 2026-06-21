@@ -63,6 +63,16 @@ class WebSocketHandler {
         socket.leave(GLOBAL_SUBSCRIBERS_ROOM);
       });
 
+      // Treasury dashboard subscription
+      socket.on('subscribe_treasury', () => {
+        socket.join('treasury_subscribers');
+        socket.emit('subscribed_treasury', { message: 'Subscribed to treasury updates' });
+      });
+
+      socket.on('unsubscribe_treasury', () => {
+        socket.leave('treasury_subscribers');
+      });
+
       socket.on('ping', () => {
         socket.emit('pong', { ts: Date.now() });
       });
@@ -166,10 +176,14 @@ class WebSocketHandler {
       // Send heartbeat only to each socket individually so each client
       // receives its own connection health ping rather than a broadcast
       // that carries aggregate server state to every client.
-      this.io.sockets.sockets.forEach((socket) => {
+      this.io.sockets?.sockets?.forEach?.((socket) => {
         socket.emit('heartbeat', { ts: Date.now() });
       });
     }, 30000);
+
+    if (typeof this.heartbeatInterval.unref === 'function') {
+      this.heartbeatInterval.unref();
+    }
   }
 
   stopHeartbeat() {
@@ -594,9 +608,20 @@ class WebSocketHandler {
       }
     });
 
-    logger.websocket('Platform announcement broadcast', {
-      type: announcement.type,
-      message: announcement.message
+    logger.websocket('Announcement broadcast', { type: announcement.type });
+  }
+
+  broadcastTreasuryUpdate(treasuryData) {
+    if (!this.io) return;
+
+    this.io.to('treasury_subscribers').emit('treasury_update', {
+      ts: Date.now(),
+      ...treasuryData
+    });
+
+    logger.websocket('Treasury update broadcast', {
+      tvl: treasuryData.tvl?.totalTVL,
+      netBalance: treasuryData.overview?.netBalance
     });
   }
 
@@ -622,6 +647,14 @@ class WebSocketHandler {
     const room = this.io.sockets.adapter.rooms.get(roomName);
 
     return room ? Array.from(room) : [];
+  }
+
+  getStats() {
+    return {
+      connectedUsers: this.connectedUsers.size,
+      marketRooms: this.marketRooms.size,
+      compressionStats: this.compressionStats
+    };
   }
 
   getWebSocketStats() {

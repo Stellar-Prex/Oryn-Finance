@@ -11,6 +11,7 @@ import CreateMarket from "./pages/CreateMarket";
 import Leaderboard from "./pages/Leaderboard";
 import Portfolio from "./pages/Portfolio";
 import Analytics from "./pages/Analytics";
+import InstitutionalReportingDashboard from "./pages/InstitutionalReportingDashboard";
 import Governance from "./pages/Governance";
 import HowItWorks from "./pages/HowItWorks";
 import About from "./pages/About";
@@ -20,6 +21,7 @@ import SmoothScroll from "@/components/SmoothScroll";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import TradeDetail from "./pages/TradeDetail";
 import LiquidityPools from "./pages/LiquidityPools";
+import YieldComparison from "./pages/YieldComparison";
 import AdminDashboard from "./pages/AdminDashboard";
 import TreasuryDashboard from "./pages/TreasuryDashboard";
 import IntegrationTest from "./components/IntegrationTest";
@@ -36,6 +38,7 @@ import LiquidityRebalancing from "./pages/LiquidityRebalancing";
 import OracleConsensus from "./pages/OracleConsensus";
 import GovernanceTimelock from "./pages/GovernanceTimelock";
 import NotificationPreferences from "./pages/NotificationPreferences";
+import PortfolioAnalytics from "./pages/PortfolioAnalytics";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { useOffline } from "@/hooks/useOffline";
@@ -65,6 +68,7 @@ function AppShell() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/reports" element={<InstitutionalReportingDashboard />} />
           <Route path="/governance" element={<Governance />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
@@ -101,8 +105,10 @@ const App = () => (
                 <Route path="/portfolio" element={<Portfolio />} />
                 <Route path="/trade/:tradeId" element={<TradeDetail />} />
                 <Route path="/liquidity" element={<LiquidityPools />} />
+                <Route path="/yield" element={<YieldComparison />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/analytics" element={<Analytics />} />
+                <Route path="/reports" element={<InstitutionalReportingDashboard />} />
                 <Route path="/governance" element={<Governance />} />
                 <Route path="/how-it-works" element={<HowItWorks />} />
                 <Route path="/about" element={<About />} />
@@ -121,6 +127,7 @@ const App = () => (
                 <Route path="/oracle/consensus" element={<OracleConsensus />} />
                 <Route path="/governance/timelock" element={<GovernanceTimelock />} />
                 <Route path="/notifications/preferences" element={<NotificationPreferences />} />
+                <Route path="/portfolio/analytics" element={<PortfolioAnalytics />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

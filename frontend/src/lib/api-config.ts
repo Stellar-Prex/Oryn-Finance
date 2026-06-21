@@ -76,6 +76,8 @@ export const ENDPOINTS = {
   LIQUIDITY_POOLS: '/liquidity/pools',
   LIQUIDITY_POOL: (marketId: string) => `/liquidity/pools/${marketId}`,
   LIQUIDITY_DEPTH: (marketId: string) => `/liquidity/pools/${marketId}/depth`,
+  YIELD_COMPARISON: '/yield/comparison',
+  YIELD_HISTORY: (marketId: string) => `/yield/history/${marketId}`,
 
   // Markets - Extended
   MARKET_BY_REGION: (region: string) => `/markets/region/${region}`,
@@ -97,6 +99,12 @@ export const ENDPOINTS = {
   TREASURY_RECORD_INFLOW: '/treasury/inflows',
   TREASURY_RECORD_OUTFLOW: '/treasury/distributions',
   TREASURY_RECORD_GOV_ACTION: '/treasury/governance-actions',
+
+  // Institutional Reports
+  REPORTS_INSTITUTIONAL: '/reports/institutional',
+  REPORTS_MARKET_EXPOSURE: '/reports/market-exposure',
+  REPORTS_TREASURY: '/reports/treasury',
+  REPORTS_GOVERNANCE_ACTIVITY: '/reports/governance-activity',
 
   // Contracts
   CONTRACT_DEPENDENCIES: '/contracts/dependencies',

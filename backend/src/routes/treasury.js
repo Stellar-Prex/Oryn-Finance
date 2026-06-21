@@ -11,6 +11,14 @@ router.get('/inflows', asyncHandler(treasuryController.getFeeInflows));
 router.get('/outflows', asyncHandler(treasuryController.getOutflows));
 router.get('/governance-actions', asyncHandler(treasuryController.getGovernanceActions));
 
+// New treasury metrics endpoints
+router.get('/tvl', asyncHandler(treasuryController.getTVL));
+router.get('/asset-allocation', asyncHandler(treasuryController.getAssetAllocation));
+router.get('/active-positions', asyncHandler(treasuryController.getActivePositions));
+router.get('/yield-statistics', asyncHandler(treasuryController.getYieldStatistics));
+router.get('/risk-metrics', asyncHandler(treasuryController.getRiskMetrics));
+router.get('/dashboard', asyncHandler(treasuryController.getDashboardData));
+
 // Protected routes (admin/governance)
 router.post('/inflows', authenticateToken, requireAdmin, asyncHandler(treasuryController.recordFeeInflow));
 router.post('/distributions', authenticateToken, requireAdmin, asyncHandler(treasuryController.recordDistribution));

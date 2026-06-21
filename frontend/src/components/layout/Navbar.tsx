@@ -11,10 +11,12 @@ const navItems = [
   { labelKey: 'nav.home', path: '/' },
   { labelKey: 'nav.markets', path: '/markets' },
   { labelKey: 'nav.liquidity', path: '/liquidity' },
+  { labelKey: 'nav.yield', path: '/yield' },
   { labelKey: 'nav.create', path: '/create' },
   { labelKey: 'nav.about', path: '/about' },
   { labelKey: 'nav.leaderboard', path: '/leaderboard' },
   { labelKey: 'nav.analytics', path: '/analytics' },
+  { labelKey: 'nav.reports', path: '/reports' },
   { labelKey: 'nav.governance', path: '/governance' },
 ];
 

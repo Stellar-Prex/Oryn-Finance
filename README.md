@@ -12,6 +12,8 @@ https://youtu.be/1qZALlksIHs?si=f0HuHzg4F_bxwPpQ
 ![Oryn Finance Banner](https://img.shields.io/badge/Oryn%20Finance-Prediction%20Markets-blue?style=for-the-badge)
 [![Stellar](https://img.shields.io/badge/Built%20on-Stellar-black?style=for-the-badge&logo=stellar)](https://stellar.org)
 [![Soroban](https://img.shields.io/badge/Smart%20Contracts-Soroban-yellow?style=for-the-badge)](https://soroban.stellar.org)
+[![CI](https://img.shields.io/github/actions/workflow/status/anomalyco/Oryn-Finance/ci.yml?branch=main&label=CI&logo=github&style=for-the-badge)](https://github.com/anomalyco/Oryn-Finance/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-reported-brightgreen?style=for-the-badge)](https://github.com/anomalyco/Oryn-Finance/actions/workflows/ci.yml)
 
 **Next-Generation Decentralized Prediction Markets on Stellar Blockchain**
 
@@ -298,6 +300,7 @@ graph TB
 {
   "containerization": "Docker",
   "ci_cd": "GitHub Actions",
+  "coverage": "Jest + Vitest Coverage Reports",
   "monitoring": "Winston Logging",
   "documentation": "Swagger/OpenAPI 3.0",
   "security": "Helmet.js + CORS + Rate Limiting"
@@ -447,11 +450,28 @@ redis-server
 cd backend && npm run seed
 ```
 
-### 5. Smart Contract Deployment
+### 5. Smart Contracts
+
+#### Build & Test Locally
 ```bash
 cd contracts
 
-# Build contracts
+# Fast compilation check
+cargo check --workspace
+
+# Build all contracts
+cargo build --workspace
+
+# Run all contract tests
+cargo test --workspace
+
+# Lint contracts
+cargo clippy --workspace --no-deps
+```
+
+#### Deploy to Testnet
+```bash
+# Build contracts with stellar CLI
 stellar contract build
 
 # Deploy to testnet (requires Stellar CLI configuration)
@@ -791,8 +811,14 @@ We welcome contributions from the community! Team Brotherhood believes in open-s
 
 4. **Run Tests**
    ```bash
-   npm test              # Backend tests
-   cd frontend && npm test  # Frontend tests
+   # Backend tests
+   npm test
+
+   # Frontend tests
+   cd frontend && npm test
+
+   # Smart contract tests
+   cd contracts && cargo test --workspace
    ```
 
 5. **Submit Pull Request**
@@ -813,6 +839,14 @@ We welcome contributions from the community! Team Brotherhood believes in open-s
 - **Integration Tests**: API endpoint testing
 - **E2E Tests**: Critical user flows
 - **Contract Tests**: Comprehensive smart contract testing
+
+#### **Smart Contract CI Requirements**
+- **Rust Toolchain**: Requires Rust stable with `wasm32-unknown-unknown` target
+- **Compilation**: All contracts must compile without errors (`cargo check --workspace`)
+- **Linting**: Clippy warnings should be addressed (`cargo clippy --workspace --no-deps`)
+- **Tests**: All contract tests must pass (`cargo test --workspace`)
+- **CI Pipeline**: Contract checks run automatically on every PR; failed builds or tests block merging
+- **Test reports**: Summary and logs are uploaded as GitHub Actions artifacts
 
 #### **Documentation**
 - **Code Comments**: Inline documentation

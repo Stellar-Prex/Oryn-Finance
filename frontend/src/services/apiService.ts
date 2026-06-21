@@ -44,12 +44,15 @@ export const networkService = {
     if (!response.success) {
       throw new Error(response.message || 'Failed to get current ledger');
     }
-    return response.data!.currentLedger;
+    return response.data!.currentLedger ?? (response.data as any).ledger;
   },
 
   // Get transaction status
   async getTransactionStatus(txHash: string): Promise<any> {
-    const response = await apiClient.get(ENDPOINTS.TRANSACTION_STATUS(txHash));
+    const endpoint = typeof ENDPOINTS.TRANSACTION_STATUS === 'function'
+      ? ENDPOINTS.TRANSACTION_STATUS(txHash)
+      : `/transactions/status/${txHash}`;
+    const response = await apiClient.get(endpoint);
     if (!response.success) {
       throw new Error(response.message || 'Failed to get transaction status');
     }
@@ -750,6 +753,27 @@ export const liquidityService = {
   },
 };
 
+export const yieldService = {
+  async getComparison(params?: { category?: string; sort?: string; direction?: string; minApy?: number; maxRisk?: number }): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') queryParams.append(key, String(value));
+      });
+    }
+    const endpoint = queryParams.toString() ? `${ENDPOINTS.YIELD_COMPARISON}?${queryParams}` : ENDPOINTS.YIELD_COMPARISON;
+    const response = await apiClient.get(endpoint);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch yield comparison');
+    return response.data;
+  },
+
+  async getHistory(marketId: string, days = 30): Promise<any> {
+    const response = await apiClient.get(`${ENDPOINTS.YIELD_HISTORY(marketId)}?days=${days}`);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch yield history');
+    return response.data;
+  },
+};
+
 // Admin Services
 export const adminService = {
   async getDashboard(authToken: string): Promise<any> {
@@ -916,6 +940,53 @@ export const treasuryService = {
     const endpoint = queryParams.toString() ? `${ENDPOINTS.TREASURY_GOV_ACTIONS}?${queryParams}` : ENDPOINTS.TREASURY_GOV_ACTIONS;
     const response = await apiClient.get(endpoint);
     if (!response.success) throw new Error(response.message || 'Failed to fetch governance actions');
+    return response.data;
+  },
+};
+
+// Institutional Reporting Services
+export const reportingService = {
+  buildQuery(params?: { timeframe?: string; category?: string; limit?: number }): string {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    return queryParams.toString();
+  },
+
+  async getInstitutionalDashboard(params?: { timeframe?: string; category?: string; limit?: number }): Promise<any> {
+    const query = this.buildQuery(params);
+    const endpoint = query ? `${ENDPOINTS.REPORTS_INSTITUTIONAL}?${query}` : ENDPOINTS.REPORTS_INSTITUTIONAL;
+    const response = await apiClient.get(endpoint);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch institutional reports');
+    return response.data;
+  },
+
+  async getMarketExposure(params?: { timeframe?: string; category?: string; limit?: number }): Promise<any> {
+    const query = this.buildQuery(params);
+    const endpoint = query ? `${ENDPOINTS.REPORTS_MARKET_EXPOSURE}?${query}` : ENDPOINTS.REPORTS_MARKET_EXPOSURE;
+    const response = await apiClient.get(endpoint);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch market exposure report');
+    return response.data;
+  },
+
+  async getTreasury(params?: { timeframe?: string; limit?: number }): Promise<any> {
+    const query = this.buildQuery(params);
+    const endpoint = query ? `${ENDPOINTS.REPORTS_TREASURY}?${query}` : ENDPOINTS.REPORTS_TREASURY;
+    const response = await apiClient.get(endpoint);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch treasury report');
+    return response.data;
+  },
+
+  async getGovernanceActivity(params?: { timeframe?: string; limit?: number }): Promise<any> {
+    const query = this.buildQuery(params);
+    const endpoint = query ? `${ENDPOINTS.REPORTS_GOVERNANCE_ACTIVITY}?${query}` : ENDPOINTS.REPORTS_GOVERNANCE_ACTIVITY;
+    const response = await apiClient.get(endpoint);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch governance activity report');
     return response.data;
   },
 };
@@ -1182,9 +1253,11 @@ export const apiService = {
   leaderboard: leaderboardService,
   analytics: analyticsService,
   liquidity: liquidityService,
+  yield: yieldService,
   admin: adminService,
   volatility: volatilityService,
   treasury: treasuryService,
+  reports: reportingService,
   contracts: contractService,
   liquidityPositions: liquidityPositionService,
   crossChain: crossChainService,
