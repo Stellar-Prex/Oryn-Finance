@@ -51,13 +51,14 @@ const correlationRoutes = require('./src/routes/correlation');
 const marketAlertsRoutes = require('./src/routes/marketAlerts');
 const messagesRoutes = require('./src/routes/messages');
 const reportsRoutes = require('./src/routes/reports');
-const yieldRoutes = require('./src/routes/yield');
+const riskAssessmentRoutes = require('./src/routes/riskAssessment'); // Issue #187
 
 
 // Import services
 const backgroundJobs = require('./src/services/backgroundJobs');
 const websocketHandler = require('./src/services/websocketHandler');
 const contractEventIndexer = require('./src/services/contractEventIndexer');
+const eventReconciliationService = require('./src/services/eventReconciliationService');
 const transactionRetryQueue = require('./src/services/transactionRetryQueue'); // Issue #23
 const pushNotificationService = require('./src/services/pushNotificationService');
 const encryptionService = require('./src/services/encryptionService');
@@ -250,6 +251,7 @@ class OrynBackendServer {
     this.app.use('/api/governance/delegate', governanceDelegationRoutes);
     this.app.use('/api/correlation', correlationRoutes);
     this.app.use('/api/market-alerts', marketAlertsRoutes);
+    this.app.use('/api/risk-assessment', riskAssessmentRoutes); // Issue #187
 
     // Transaction routes (mixed auth - some endpoints require auth, others don't)
     this.app.use('/api/transactions', transactionRoutes);
@@ -348,6 +350,15 @@ class OrynBackendServer {
         logger.warn('Contract event indexing will be disabled');
       }
 
+      // Start event reconciliation service
+      try {
+        eventReconciliationService.start();
+        logger.info('Event reconciliation service started');
+      } catch (error) {
+        logger.warn('Failed to start event reconciliation service:', error.message);
+        logger.warn('Event reconciliation will be disabled');
+      }
+
       // Start geo-failover health monitoring
       try {
         geoFailoverService.start();
@@ -379,6 +390,14 @@ class OrynBackendServer {
             logger.info('Contract event indexer stopped');
           } catch (error) {
             logger.warn('Error stopping contract event indexer:', error.message);
+          }
+
+          // Stop event reconciliation service
+          try {
+            eventReconciliationService.stop();
+            logger.info('Event reconciliation service stopped');
+          } catch (error) {
+            logger.warn('Error stopping event reconciliation service:', error.message);
           }
 
           // Stop geo-failover monitoring

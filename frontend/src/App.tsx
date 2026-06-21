@@ -37,6 +37,7 @@ import SentimentHistory from "./pages/SentimentHistory";
 import LiquidityRebalancing from "./pages/LiquidityRebalancing";
 import OracleConsensus from "./pages/OracleConsensus";
 import GovernanceTimelock from "./pages/GovernanceTimelock";
+import PortfolioAnalytics from "./pages/PortfolioAnalytics";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { useOffline } from "@/hooks/useOffline";
@@ -124,6 +125,7 @@ const App = () => (
                 <Route path="/liquidity/rebalancing" element={<LiquidityRebalancing />} />
                 <Route path="/oracle/consensus" element={<OracleConsensus />} />
                 <Route path="/governance/timelock" element={<GovernanceTimelock />} />
+                <Route path="/portfolio/analytics" element={<PortfolioAnalytics />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
