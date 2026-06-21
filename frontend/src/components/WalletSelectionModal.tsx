@@ -32,7 +32,14 @@ const WALLET_INSTALL_URLS: Record<string, string> = {
 };
 
 export function WalletSelectionModal({ open, onOpenChange }: WalletSelectionModalProps) {
-  const { connect, isConnecting, network, switchNetwork } = useWallet();
+  const {
+    connect,
+    switchWallet,
+    connectedWallet,
+    isConnecting,
+    network,
+    switchNetwork,
+  } = useWallet();
   const [availableWallets, setAvailableWallets] = useState<WalletInfo[]>([]);
   const [selectedWallet, setSelectedWallet] = useState<WalletType | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +70,11 @@ export function WalletSelectionModal({ open, onOpenChange }: WalletSelectionModa
     setError(null);
 
     try {
-      await connect(walletType);
+      if (connectedWallet && connectedWallet !== walletType) {
+        await switchWallet(walletType);
+      } else {
+        await connect(walletType);
+      }
       onOpenChange(false);
       setSelectedWallet(null);
     } catch (error) {
