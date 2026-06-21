@@ -9,6 +9,7 @@ const EventSchedule = require('./EventSchedule');
 const WhaleTransaction = require('./WhaleTransaction');
 const WhaleAlert = require('./WhaleAlert');
 const Appeal = require('./Appeal');
+const YieldSnapshot = require('./YieldSnapshot');
 
 module.exports = {
   Market,
@@ -21,5 +22,6 @@ module.exports = {
   EventSchedule,
   WhaleTransaction,
   WhaleAlert,
-  Appeal
+  Appeal,
+  YieldSnapshot
 };

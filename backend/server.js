@@ -245,6 +245,7 @@ class OrynBackendServer {
     this.app.use('/api/volatility', volatilityRoutes);
     this.app.use('/api/geo-failover', geoFailoverRoutes);
     this.app.use('/api/reports', reportsRoutes);
+    this.app.use('/api/yield', yieldRoutes);
     this.app.use('/api/liquidity', liquidityRebalancingRoutes); // Issue #163 (rebalancing sub-route)
     this.app.use('/api/governance/timelock', governanceTimelockRoutes); // Issue #165
     this.app.use('/api/governance/delegate', governanceDelegationRoutes);

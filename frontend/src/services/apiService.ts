@@ -753,6 +753,27 @@ export const liquidityService = {
   },
 };
 
+export const yieldService = {
+  async getComparison(params?: { category?: string; sort?: string; direction?: string; minApy?: number; maxRisk?: number }): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') queryParams.append(key, String(value));
+      });
+    }
+    const endpoint = queryParams.toString() ? `${ENDPOINTS.YIELD_COMPARISON}?${queryParams}` : ENDPOINTS.YIELD_COMPARISON;
+    const response = await apiClient.get(endpoint);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch yield comparison');
+    return response.data;
+  },
+
+  async getHistory(marketId: string, days = 30): Promise<any> {
+    const response = await apiClient.get(`${ENDPOINTS.YIELD_HISTORY(marketId)}?days=${days}`);
+    if (!response.success) throw new Error(response.message || 'Failed to fetch yield history');
+    return response.data;
+  },
+};
+
 // Admin Services
 export const adminService = {
   async getDashboard(authToken: string): Promise<any> {
@@ -1232,6 +1253,7 @@ export const apiService = {
   leaderboard: leaderboardService,
   analytics: analyticsService,
   liquidity: liquidityService,
+  yield: yieldService,
   admin: adminService,
   volatility: volatilityService,
   treasury: treasuryService,

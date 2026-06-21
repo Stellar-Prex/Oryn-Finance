@@ -21,6 +21,7 @@ import SmoothScroll from "@/components/SmoothScroll";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import TradeDetail from "./pages/TradeDetail";
 import LiquidityPools from "./pages/LiquidityPools";
+import YieldComparison from "./pages/YieldComparison";
 import AdminDashboard from "./pages/AdminDashboard";
 import TreasuryDashboard from "./pages/TreasuryDashboard";
 import IntegrationTest from "./components/IntegrationTest";
@@ -103,6 +104,7 @@ const App = () => (
                 <Route path="/portfolio" element={<Portfolio />} />
                 <Route path="/trade/:tradeId" element={<TradeDetail />} />
                 <Route path="/liquidity" element={<LiquidityPools />} />
+                <Route path="/yield" element={<YieldComparison />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/reports" element={<InstitutionalReportingDashboard />} />
