@@ -51,3 +51,18 @@ interface GrowthData {
   allTime:      { volume: number; trades: number; since: string | null };
   weekOverWeek: number;
 }
+
+const ALLOC_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444'];
+const TIMEFRAMES: Timeframe[] = ['24h', '7d', '30d', '1y'];
+
+function fmtUsd(n: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+  }).format(n);
+}
+
+function fmtPct(n: number) {
+  return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+}
