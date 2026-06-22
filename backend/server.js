@@ -54,6 +54,7 @@ const messagesRoutes = require('./src/routes/messages');
 const reportsRoutes = require('./src/routes/reports');
 const riskAssessmentRoutes = require('./src/routes/riskAssessment'); // Issue #187
 const auditRoutes = require('./src/routes/audit'); // Issue #194
+const rateLimitMetricsRoutes = require('./src/routes/rateLimitMetrics'); // Issue #198
 
 
 // Import services
