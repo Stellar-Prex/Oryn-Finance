@@ -32,4 +32,8 @@ function onRateLimitExceeded(req, res, options, limiterName) {
   });
 }
 
+function skipHealthChecks(req) {
+  return req.path === '/health' || req.path === '/api/health';
+}
+
 module.exports = {};
