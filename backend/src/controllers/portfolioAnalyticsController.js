@@ -132,3 +132,16 @@ async function fetchGrowthMetrics(walletAddress) {
     weekOverWeek: Math.round(weekOverWeek * 100) / 100,
   };
 }
+
+class PortfolioAnalyticsController {
+  static async getPerformanceSeries(req, res) {
+    try {
+      const { walletAddress } = req.params;
+      const tf = req.query.timeframe || '30d';
+      res.json({ success: true, data: await fetchPerformanceSeries(walletAddress, tf) });
+    } catch (error) {
+      logger.error('[PORTFOLIO-ANALYTICS] getPerformanceSeries error', error);
+      res.status(500).json({ success: false, message: 'Failed to load performance data.' });
+    }
+  }
+}
