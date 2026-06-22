@@ -119,3 +119,56 @@ export default function PortfolioAnalytics({ walletAddress }: { walletAddress: s
   }
 
   const pnlPositive = (yieldData?.realizedPnL ?? 0) >= 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Timeframe picker */}
+      <div className="flex gap-2 flex-wrap">
+        {TIMEFRAMES.map((tf) => (
+          <Button
+            key={tf}
+            size="sm"
+            variant={timeframe === tf ? 'default' : 'outline'}
+            onClick={() => setTimeframe(tf)}
+          >
+            {tf}
+          </Button>
+        ))}
+      </div>
+
+      {/* Metric cards */}
+      {yieldData && (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <MagicCard className="p-4">
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+              <DollarSign className="w-3 h-3" /> Invested
+            </div>
+            <p className="text-lg font-semibold">{fmtUsd(yieldData.totalInvested)}</p>
+          </MagicCard>
+          <MagicCard className="p-4">
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+              <Activity className="w-3 h-3" /> Returns
+            </div>
+            <p className="text-lg font-semibold">{fmtUsd(yieldData.totalReturns)}</p>
+          </MagicCard>
+          <MagicCard className="p-4">
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+              {pnlPositive
+                ? <TrendingUp className="w-3 h-3 text-success" />
+                : <TrendingDown className="w-3 h-3 text-destructive" />}
+              Realized P&amp;L
+            </div>
+            <p className={`text-lg font-semibold ${pnlPositive ? 'text-success' : 'text-destructive'}`}>
+              {fmtUsd(yieldData.realizedPnL)}
+            </p>
+          </MagicCard>
+          <MagicCard className="p-4">
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+              <BarChart2 className="w-3 h-3" /> ROI
+            </div>
+            <p className={`text-lg font-semibold ${yieldData.roi >= 0 ? 'text-success' : 'text-destructive'}`}>
+              {fmtPct(yieldData.roi)}
+            </p>
+          </MagicCard>
+        </div>
+      )}
