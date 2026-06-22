@@ -80,3 +80,35 @@ async function fetchAllocation(walletAddress, tf) {
     timeframe: tf,
   };
 }
+
+async function fetchYieldBreakdown(walletAddress, tf) {
+  const since = parseTimeframe(tf);
+  const base = { userWalletAddress: walletAddress, status: { $in: ['confirmed', 'partially_filled'] }, timestamp: { $gte: since } };
+  const [buyStats, sellStats] = await Promise.all([
+    Trade.aggregate([
+      { $match: { ...base, tradeType: 'buy' } },
+      { $group: { _id: null, totalInvested: { $sum: '$totalCost' }, totalFees: { $sum: { $add: ['$fees.platformFee', '$fees.stellarFee'] } }, platformFees: { $sum: '$fees.platformFee' }, stellarFees: { $sum: '$fees.stellarFee' }, count: { $sum: 1 } } },
+    ]),
+    Trade.aggregate([
+      { $match: { ...base, tradeType: 'sell' } },
+      { $group: { _id: null, totalReturns: { $sum: '$totalCost' }, count: { $sum: 1 } } },
+    ]),
+  ]);
+  const buy  = buyStats[0]  || { totalInvested: 0, totalFees: 0, platformFees: 0, stellarFees: 0, count: 0 };
+  const sell = sellStats[0] || { totalReturns: 0, count: 0 };
+  const realizedPnL = sell.totalReturns - buy.totalInvested;
+  const roi = buy.totalInvested > 0 ? (realizedPnL / buy.totalInvested) * 100 : 0;
+  return {
+    totalInvested: Math.round(buy.totalInvested * 100) / 100,
+    totalReturns:  Math.round(sell.totalReturns  * 100) / 100,
+    realizedPnL:   Math.round(realizedPnL        * 100) / 100,
+    roi:           Math.round(roi                * 100) / 100,
+    fees: {
+      total:    Math.round(buy.totalFees    * 100) / 100,
+      platform: Math.round(buy.platformFees * 100) / 100,
+      stellar:  Math.round(buy.stellarFees  * 100) / 100,
+    },
+    tradeCounts: { buys: buy.count, sells: sell.count },
+    timeframe: tf,
+  };
+}
