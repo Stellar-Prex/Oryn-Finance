@@ -94,4 +94,13 @@ function detectAbuse(req, res, next) {
   next();
 }
 
-module.exports = { detectAbuse };
+function getAbuseMetrics() {
+  return {
+    currentlyBlocked: 0,
+    blockedIPs: [],
+    topSuspicious: [],
+    activeWindows: 0,
+  };
+}
+
+module.exports = { detectAbuse, getAbuseMetrics };
