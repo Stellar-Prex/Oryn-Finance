@@ -172,6 +172,9 @@ class OrynBackendServer {
     // Abuse detection (pattern analysis + IP blocking)
     this.app.use('/api/', detectAbuse);
 
+    // Burst protection — caps sudden spikes within a short window (Issue #198)
+    this.app.use('/api/', burstLimiter);
+
     // Global rate limit — IP-based cap for all API requests (Issue #198)
     this.app.use('/api/', globalLimiter);
 
