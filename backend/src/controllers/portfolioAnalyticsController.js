@@ -11,3 +11,8 @@ const TIMEFRAME_OFFSETS = {
 function parseTimeframe(tf) {
   return new Date(Date.now() - (TIMEFRAME_OFFSETS[tf] || TIMEFRAME_OFFSETS['30d']));
 }
+
+function groupByDate(tf) {
+  const fmt = tf === '24h' ? '%Y-%m-%dT%H:00' : '%Y-%m-%d';
+  return { $dateToString: { format: fmt, date: '$timestamp' } };
+}
