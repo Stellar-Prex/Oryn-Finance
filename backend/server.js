@@ -53,6 +53,7 @@ const messagesRoutes = require('./src/routes/messages');
 const reportsRoutes = require('./src/routes/reports');
 const riskAssessmentRoutes = require('./src/routes/riskAssessment'); // Issue #187
 const auditRoutes = require('./src/routes/audit'); // Issue #194
+const portfolioAnalyticsRoutes = require('./src/routes/portfolioAnalytics'); // Issue #199
 
 
 // Import services
@@ -254,6 +255,7 @@ class OrynBackendServer {
     this.app.use('/api/market-alerts', marketAlertsRoutes);
     this.app.use('/api/risk-assessment', riskAssessmentRoutes); // Issue #187
     this.app.use('/api/audit', auditRoutes); // Issue #194 — centralized audit logging
+    this.app.use('/api/portfolio', portfolioAnalyticsRoutes); // Issue #199 — portfolio analytics — centralized audit logging
 
     // Transaction routes (mixed auth - some endpoints require auth, others don't)
     this.app.use('/api/transactions', transactionRoutes);
