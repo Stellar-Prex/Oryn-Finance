@@ -112,3 +112,23 @@ async function fetchYieldBreakdown(walletAddress, tf) {
     timeframe: tf,
   };
 }
+
+async function fetchGrowthMetrics(walletAddress) {
+  const baseMatch = { userWalletAddress: walletAddress, status: { $in: ['confirmed', 'partially_filled'] } };
+  const groupStd  = { _id: null, volume: { $sum: '$totalCost' }, count: { $sum: 1 } };
+  const [s30, s7, sAll] = await Promise.all([
+    Trade.aggregate([{ $match: { ...baseMatch, timestamp: { $gte: parseTimeframe('30d') } } }, { $group: groupStd }]),
+    Trade.aggregate([{ $match: { ...baseMatch, timestamp: { $gte: parseTimeframe('7d')  } } }, { $group: groupStd }]),
+    Trade.aggregate([{ $match: baseMatch }, { $group: { ...groupStd, firstTrade: { $min: '$timestamp' } } }]),
+  ]);
+  const m30 = s30[0]  || { volume: 0, count: 0 };
+  const w7  = s7[0]   || { volume: 0, count: 0 };
+  const all = sAll[0] || { volume: 0, count: 0, firstTrade: null };
+  const weekOverWeek = m30.volume > 0 ? ((w7.volume / (m30.volume / 4)) - 1) * 100 : 0;
+  return {
+    last7Days:    { volume: Math.round(w7.volume  * 100) / 100, trades: w7.count  },
+    last30Days:   { volume: Math.round(m30.volume * 100) / 100, trades: m30.count },
+    allTime:      { volume: Math.round(all.volume * 100) / 100, trades: all.count, since: all.firstTrade },
+    weekOverWeek: Math.round(weekOverWeek * 100) / 100,
+  };
+}
