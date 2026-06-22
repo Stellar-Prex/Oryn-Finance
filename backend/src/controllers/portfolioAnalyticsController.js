@@ -50,3 +50,33 @@ async function fetchPerformanceSeries(walletAddress, tf) {
   ]);
   return { series, timeframe: tf };
 }
+
+async function fetchAllocation(walletAddress, tf) {
+  const since = parseTimeframe(tf);
+  const allocation = await Trade.aggregate([
+    {
+      $match: {
+        userWalletAddress: walletAddress,
+        status: { $in: ['confirmed', 'partially_filled'] },
+        timestamp: { $gte: since },
+      },
+    },
+    {
+      $group: {
+        _id: '$tokenType',
+        totalCost: { $sum: '$totalCost' },
+        tradeCount: { $sum: 1 },
+      },
+    },
+    { $project: { tokenType: '$_id', totalCost: { $round: ['$totalCost', 2] }, tradeCount: 1, _id: 0 } },
+  ]);
+  const total = allocation.reduce((sum, item) => sum + item.totalCost, 0);
+  return {
+    allocation: allocation.map((item) => ({
+      ...item,
+      percentage: total > 0 ? Math.round((item.totalCost / total) * 10000) / 100 : 0,
+    })),
+    total: Math.round(total * 100) / 100,
+    timeframe: tf,
+  };
+}
