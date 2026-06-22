@@ -66,3 +66,12 @@ function fmtUsd(n: number) {
 function fmtPct(n: number) {
   return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
 }
+
+export default function PortfolioAnalytics({ walletAddress }: { walletAddress: string }) {
+  const [timeframe, setTimeframe] = useState<Timeframe>('30d');
+  const [series, setSeries]       = useState<PerformanceSeries[]>([]);
+  const [allocation, setAllocation] = useState<AllocationItem[]>([]);
+  const [yieldData, setYieldData] = useState<YieldData | null>(null);
+  const [growth, setGrowth]       = useState<GrowthData | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
