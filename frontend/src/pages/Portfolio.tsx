@@ -44,6 +44,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import PortfolioAnalytics from '@/components/portfolio/PortfolioAnalytics';
 
 type TradeStatusFilter = 'all' | 'confirmed' | 'partially_filled' | 'pending' | 'failed' | 'cancelled';
 type TradeTypeFilter = 'all' | 'buy' | 'sell';
@@ -1149,6 +1150,15 @@ export default function Portfolio() {
           </div>
         </MagicCard>
       </div>
+      {/* Portfolio Performance Analytics */}
+      {isConnected && publicKey && (
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          <MagicCard className="p-6">
+            <h2 className="text-base font-semibold mb-6">Performance Analytics</h2>
+            <PortfolioAnalytics walletAddress={publicKey} />
+          </MagicCard>
+        </div>
+      )}
     </Layout>
   );
 }
