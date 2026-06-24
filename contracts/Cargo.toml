@@ -19,7 +19,7 @@ resolver = "2"
 
 [workspace.dependencies]
 soroban-sdk = { version = "20.4.0", default-features = false }
-soroban-token-sdk = { version = "20.4.0", default-features = false }
+soroban-token-sdk = { version = "26.1.0", default-features = false }
 
 [profile.release]
 opt-level = "z"
