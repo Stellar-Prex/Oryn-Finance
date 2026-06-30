@@ -87,6 +87,14 @@ export function WalletSelector() {
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-white/10" />
+                            <DropdownMenuItem
+                                onClick={() => setWalletModalOpen(true)}
+                                className="focus:bg-white/10 focus:text-white cursor-pointer"
+                            >
+                                <Wallet className="w-4 h-4 mr-2" />
+                                Switch wallet
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-white/10" />
                             <DropdownMenuItem onClick={disconnect} className="text-red-400 focus:text-red-300 focus:bg-white/10 cursor-pointer">
                                 Disconnect
                             </DropdownMenuItem>
